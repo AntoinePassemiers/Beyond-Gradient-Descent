@@ -2,6 +2,7 @@
 *.pyd
 *.o
 *.c
+.*
 
 bgd.egg-info/
 dist/

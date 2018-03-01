@@ -7,12 +7,13 @@ import numpy as np
 from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup as np_setup
 
-DELETE_GENERATED_C_FILES = True
+DELETE_GENERATED_C_FILES = False
 source_folder = "bgd"
 sub_packages = [
 ]
 source_files = [
     (["operators.c"], "operators"),
+    (["nn.c"], "nn")
 ]
 
 extra_compile_args = list() # TODO

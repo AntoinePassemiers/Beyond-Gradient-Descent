@@ -14,11 +14,12 @@ try:
     USE_CYTHON = True
 except ImportError:
     USE_CYTHON = False
-    
+
 
 source_folder = "bgd"
 source_files = [
     "operators.pyx",
+    "nn.pyx",
 ]
 
 def configuration(parent_package = str(), top_path = None):
@@ -65,6 +66,7 @@ if USE_CYTHON and GOT_BUILD_CMD:
         os.remove(init_path)
         print("__init__.py file removed")
     # Generates the C files, but does not compile them
+    print('\t\tCYTHONINZING')
     extensions = cythonize(
         extensions,
         language = "c"
