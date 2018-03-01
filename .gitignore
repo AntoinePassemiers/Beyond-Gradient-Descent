@@ -3,5 +3,7 @@
 *.o
 *.c
 
+bgd.egg-info/
+dist/
 build/
 __pycache__/

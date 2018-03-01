@@ -10,4 +10,4 @@
 def test():
     with nogil:
         pass
-    print("Mangez des pommes.")
+    print("Mangez des pommes. La pomme est un fruit... sympathique, je l'observe tous les jours.")
