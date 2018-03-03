@@ -23,7 +23,7 @@ class NeuralStack:
     def add(self, layer):
         self.layers.append(layer)
 
-    def train(self, X, y, steps=10000, error_op='cross-entropy', learning_rate=.01, reg_L2=.01):
+    def train(self, X, y, steps=10000, error_op='cross-entropy', learning_rate=.01, reg_L2=.01, print_every=50):
         error_op = CrossEntropy() if error_op.lower() == 'cross-entropy' else MSE()
         errors = list()
 
@@ -34,31 +34,26 @@ class NeuralStack:
                 all_weights.append(params[0])
 
         for step in range(steps):
+            # Forward pass
             probs = self.eval(X)
             
+            # Compute loss function
             loss = error_op.eval(y, probs)
+
+            # Apply L2 regularization
             for weights in all_weights:
                 loss += 0.5 * reg_L2 * np.sum(weights ** 2)
             errors.append(loss)
 
-            # compute error
+            # Compute gradient of the loss function
             error = error_op.grad(y, probs)
+
+            # Propagate error through each layer
+            for layer in reversed(self.layers):
+                extra_info = {'learning_rate': learning_rate, 'l2_reg': reg_L2}
+                error = layer._backward(error, extra_info)
             
-            for i in [1, 0]:
-                full_layer = self.layers[i*2]
-                W, b = full_layer.get_parameters()
-                current_input = self.layers[i*2].current_input
-                activation_layer = self.layers[i*2+1]
-                error = activation_layer._backward(error)
-            
-                gradient_weights = np.dot(current_input.T, error)
-                gradient_weights += reg_L2 * W
-                gradient_bias = np.sum(error, axis=0, keepdims=True)
-                W -= learning_rate * gradient_weights
-                b -= learning_rate * gradient_bias
-                error = np.dot(error, W.T)
-            
-            if step % 50 == 0:
+            if step % print_every == 0:
                 print('Loss at step {0}: {1}'.format(step, loss))
         
         return errors
