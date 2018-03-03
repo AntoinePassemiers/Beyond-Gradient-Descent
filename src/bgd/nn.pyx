@@ -51,7 +51,7 @@ class NeuralStack:
             # Propagate error through each layer
             for layer in reversed(self.layers):
                 extra_info = {'learning_rate': learning_rate, 'l2_reg': reg_L2}
-                error = layer._backward(error, extra_info)
+                error = layer.backward(error, extra_info)
             
             if step % print_every == 0:
                 print('Loss at step {0}: {1}'.format(step, loss))

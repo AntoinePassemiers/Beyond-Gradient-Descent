@@ -106,16 +106,3 @@ class Activation(Layer):
             return X
         else:
             raise NotImplementedError()
-
-
-if __name__ == '__main__':
-
-    initializer = GaussianInitializer(0, .001)
-    l1 = FullyConnected(64, 500, initializer=initializer)
-    l2 = Activation(l1, function='sigmoid')
-    l3 = FullyConnected(500, 10, l2, initializer=initializer)
-    l4 = Activation(l3, function='sigmoid')
-
-    for i in range(1000):
-        Y = l1.forward_pass(X)
-        print(i)
