@@ -7,66 +7,63 @@
 # cython: nonecheck=False
 # cython: overflowcheck=False
 
+from bgd.layers import Activation, FullyConnected
+from bgd.errors import MSE, CrossEntropy
+
 import numpy as np
-#cimport numpy as np
+cimport numpy as cnp
+cnp.import_array()
 
-LEARNING_RATE = .1
 
-def sigmoid(z, derivative=False):
-    if derivative:
-        return z*(1-z)
-    return 1. / (1 + np.exp(-z))
+class NeuralStack:
 
-def mse(x, y, derivative=False):
-    if derivative:
-        return y-x
-    return .5*(y-x)**2
-
-def init_weights(shape):
-    return np.random.random(shape) - 1
-
-class NeuralNet:
     def __init__(self):
         self.layers = list()
         
-    def add_layer(self, shape, activator=sigmoid):
-        self.layers.append(FullyConnected(shape, activator))
-        
-    def add_layers(self, shape, activators=sigmoid):
-        for i in range(len(shape)-1):
-            activator = activators[i] if isinstance(activators, tuple) else activators
-            self.layers.append(FullyConnected((shape[i], shape[i+1]), activator))
-        
-    def eval(self, input):
-        for layer in self.layers:
-            input = layer.feed(input)
-        return input
-    
-    def train_gd(self, X, y, steps: int=10000, error_fct=mse):
-        errors = list()
-        for step in range(steps):
-            if step % 50 == 0:
-                print('Step {}'.format(step))
-            inputs = [X]
-            in_ = X
-            for layer in self.layers:
-                in_ = layer.feed(in_)
-                inputs.append(in_)
-            error = error_fct(in_, y, derivative=True)
-            errors.append(np.mean(np.abs(error)))
-            for layer_id, layer in reversed(list(enumerate(self.layers))):
-                delta = error * layer.activator(inputs[layer_id+1], derivative=True)
-                layer.update(np.dot(inputs[layer_id].T, delta))
-                error = np.dot(delta, layer.weights.T)
-        return errors
+    def add(self, layer):
+        self.layers.append(layer)
 
-class FullyConnected:
-    def __init__(self, shape, activator, init_fct=init_weights):
-        self.weights = init_fct(shape)
-        self.activator = activator
-    
-    def feed(self, in_):
-        return self.activator(np.dot(in_, self.weights))
-    
-    def update(self, error):
-        self.weights += error * LEARNING_RATE
+    def train(self, X, y, steps=10000, error_op='cross-entropy', learning_rate=.01, reg_L2=.01):
+        error_op = CrossEntropy() if error_op.lower() == 'cross-entropy' else MSE()
+        errors = list()
+
+        all_weights = list()
+        for layer in self.layers:
+            params = layer.get_parameters()
+            if params:
+                all_weights.append(params[0])
+
+        for step in range(steps):
+            probs = self.eval(X)
+            
+            loss = error_op.eval(y, probs)
+            for weights in all_weights:
+                loss += 0.5 * reg_L2 * np.sum(weights ** 2)
+            errors.append(loss)
+
+            # compute error
+            error = error_op.grad(y, probs)
+            
+            for i in [1, 0]:
+                full_layer = self.layers[i*2]
+                W, b = full_layer.get_parameters()
+                current_input = self.layers[i*2].current_input
+                activation_layer = self.layers[i*2+1]
+                error = activation_layer._backward(error)
+            
+                gradient_weights = np.dot(current_input.T, error)
+                gradient_weights += reg_L2 * W
+                gradient_bias = np.sum(error, axis=0, keepdims=True)
+                W -= learning_rate * gradient_weights
+                b -= learning_rate * gradient_bias
+                error = np.dot(error, W.T)
+            
+            if step % 50 == 0:
+                print('Loss at step {0}: {1}'.format(step, loss))
+        
+        return errors
+        
+    def eval(self, X):
+        for layer in self.layers:
+            X = layer.forward(X)
+        return X
