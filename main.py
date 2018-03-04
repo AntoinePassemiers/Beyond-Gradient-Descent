@@ -3,7 +3,7 @@
 # author : Antoine Passemiers, Robin Petit
 
 from bgd.nn import NeuralStack
-from bgd.layers import FullyConnected, Activation
+from bgd.layers import FullyConnected, Activation, Flatten
 from bgd.initializers import GaussianInitializer
 
 
@@ -20,14 +20,19 @@ if __name__ == '__main__':
 
     digits = load_digits()
     X, y = digits.data / 255, np.reshape(digits.target, (digits.target.shape[0], 1))
+    X = X.reshape((X.shape[0], -1)) # New shape: (-1, 8, 8)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
 
     nn = NeuralStack()
     initializer = GaussianInitializer(0, 1)
+    nn.add(Flatten())
     nn.add(FullyConnected(64, 80, initializer=initializer))
     nn.add(Activation(function='relu'))
-    nn.add(FullyConnected(80, 10, initializer=initializer))
+    nn.add(FullyConnected(80, 20, initializer=initializer))
+    nn.add(Activation(function='sigmoid'))
+    nn.add(FullyConnected(20, 10, initializer=initializer))
     nn.add(Activation(function='softmax'))
+
     y_train_encoded = LabelBinarizer().fit_transform(y_train)
     errors = nn.train(X_train, y_train_encoded, steps=3000, learning_rate=0.01)
 

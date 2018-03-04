@@ -10,7 +10,8 @@ import numpy as np
 
 class Layer(metaclass=ABCMeta):
 
-    def __init__(self):
+    def __init__(self, copy=True):
+        self.copy = copy
         self.current_input = None
         self.current_output = None
     
@@ -27,9 +28,11 @@ class Layer(metaclass=ABCMeta):
         pass
 
     def forward(self, X):
-        self.current_input = X # TODO: Copy X ?
+        self.current_input = X
         self.current_output = self._forward(X)
-        assert(not np.shares_memory(X, self.current_output, np.core.multiarray.MAY_SHARE_BOUNDS))
+        if self.copy:
+            if np.may_share_memory(X, self.current_output, np.core.multiarray.MAY_SHARE_BOUNDS):
+                self.current_output = np.copy(self.current_output)
         return self.current_output
     
     def backward(self, *args, **kwargs):
@@ -38,8 +41,8 @@ class Layer(metaclass=ABCMeta):
 
 class FullyConnected(Layer):
 
-    def __init__(self, n_in, n_out, with_bias=True, dtype=np.float32, initializer=GaussianInitializer(0, .01)):
-        Layer.__init__(self)
+    def __init__(self, n_in, n_out, copy=True, with_bias=True, dtype=np.float32, initializer=GaussianInitializer(0, .01)):
+        Layer.__init__(self, copy=copy)
         self.with_bias = with_bias
         self.dtype = dtype
         self.n_in = n_in
@@ -74,7 +77,7 @@ class FullyConnected(Layer):
 class Activation(Layer):
 
     def __init__(self, function='sigmoid', copy=True):
-        Layer.__init__(self)
+        Layer.__init__(self, copy=copy)
         self.function = function.lower()
         self.copy = copy
 
@@ -101,8 +104,24 @@ class Activation(Layer):
             X[self.current_output <= 0] = 0
             return X
         elif self.function == 'softmax':
-            if self.copy:
-                X = np.copy(X)
             return X
         else:
             raise NotImplementedError()
+
+
+class Flatten(Layer):
+
+    def __init__(self, order='C', copy=True):
+        Layer.__init__(self, copy=copy)
+        self.order = order
+        self.in_shape = None
+    
+    def get_parameters(self):
+        return None
+    
+    def _forward(self, X):
+        self.in_shape = X.shape
+        return X.reshape((X.shape[0], -1), order=self.order)
+    
+    def _backward(self, X, extra_info={}):
+        return X.reshape(self.in_shape, order=self.order)
