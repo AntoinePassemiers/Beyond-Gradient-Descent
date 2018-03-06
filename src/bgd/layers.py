@@ -3,6 +3,7 @@
 # author : Antoine Passemiers, Robin Petit
 
 from bgd.initializers import *
+from bgd.operators import *
 
 from abc import ABCMeta, abstractmethod
 import numpy as np
@@ -107,6 +108,77 @@ class Activation(Layer):
             return X
         else:
             raise NotImplementedError()
+
+
+class Convolutional2D(Layer):
+
+    def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True, copy=True, initializer=GaussianInitializer(0, .01)):
+        Layer.__init__(self, copy=copy)
+        self.filter_shape = filter_shape
+        self.strides = strides
+        self.initializer = initializer
+        self.with_bias = with_bias
+        self.n_filters = n_filters
+        assert(len(filter_shape) == 3)
+        self.filters = None
+        self.biases = None
+
+    def init_weights(self, dtype):
+        filters_shape = tuple([self.n_filters] + list(self.filter_shape))
+        self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
+        self.biases = np.zeros(self.n_filters, dtype=dtype)
+
+    def get_parameters(self):
+        return (self.filters, self.biases) if self.with_bias else (self.filters,)
+
+    def _forward(self, X):
+        if X.ndim == 3:
+            X = X[..., np.newaxis]
+        if self.filters is None:
+            self.init_weights(X.dtype)
+        # TODO: apply convolution with numpy or cython ?
+        output = conv_2d_forward(X, self.filters, self.biases, self.strides, self.with_bias)
+        return output
+    
+    def _backward(self, error, extra_info={}):
+        # TODO: Deep philosophical thoughts on backward convolution
+        gradient_bias = np.sum(error, axis=(0, 2, 3))
+        # TODO: compute gradient_filters and call update
+        return error
+
+    def update(self, dW, db, learning_rate):
+        self.filters -= learning_rate * dW
+        if self.with_bias:
+            self.biases -= learning_rate * np.sum(db, axis=0, keepdims=True)
+
+
+class Dropout(Layer):
+
+    def __init__(self, keep_proba=.5, copy=True):
+        Layer.__init__(self, copy=copy)
+        self.keep_proba = keep_proba
+        self.active = False
+        self.mask = None
+    
+    def activate(self):
+        self.active = True
+    
+    def deactivate(self):
+        self.active = False
+    
+    def get_parameters(self):
+        return None
+    
+    def _forward(self, X):
+        if self.active:
+            self.mask = (np.random.rand(*X.shape) > (1. - self.keep_proba))
+            return self.mask * X
+        else:
+            return X
+    
+    def _backward(self, X, extra_info={}):
+        assert(self.active)
+        return self.mask * X
 
 
 class Flatten(Layer):

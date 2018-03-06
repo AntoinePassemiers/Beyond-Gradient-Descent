@@ -7,7 +7,7 @@
 # cython: nonecheck=False
 # cython: overflowcheck=False
 
-from bgd.layers import Activation, FullyConnected
+from bgd.layers import Activation, FullyConnected, Dropout
 from bgd.errors import MSE, CrossEntropy
 
 import numpy as np
@@ -27,11 +27,10 @@ class NeuralStack:
         error_op = CrossEntropy() if error_op.lower() == 'cross-entropy' else MSE()
         errors = list()
 
-        all_weights = list()
+        # Activate dropout
         for layer in self.layers:
-            params = layer.get_parameters()
-            if params:
-                all_weights.append(params[0])
+            if isinstance(layer, Dropout):
+                layer.activate()
 
         for step in range(steps):
             # Forward pass
@@ -41,8 +40,10 @@ class NeuralStack:
             loss = error_op.eval(y, probs)
 
             # Apply L2 regularization
-            for weights in all_weights:
-                loss += 0.5 * reg_L2 * np.sum(weights ** 2)
+            for layer in self.layers:
+                params = layer.get_parameters()
+                if params:
+                    loss += 0.5 * reg_L2 * np.sum(params[0] ** 2)
             errors.append(loss)
 
             # Compute gradient of the loss function
@@ -55,6 +56,11 @@ class NeuralStack:
             
             if step % print_every == 0:
                 print('Loss at step {0}: {1}'.format(step, loss))
+
+        # Deactivate dropout
+        for layer in self.layers:
+            if isinstance(layer, Dropout):
+                layer.deactivate()
         
         return errors
         
