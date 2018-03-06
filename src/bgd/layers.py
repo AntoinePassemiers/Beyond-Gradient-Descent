@@ -88,6 +88,8 @@ class Activation(Layer):
     def _forward(self, X):
         if self.function == 'sigmoid':
             return 1. / (1. + np.exp(-X))
+        elif self.function == 'tanh':
+            return np.tanh(X)
         elif self.function == 'relu':
             return np.maximum(X, 0)
         elif self.function == 'softmax':
@@ -99,13 +101,15 @@ class Activation(Layer):
     def _backward(self, X, extra_info={}):
         if self.function == 'sigmoid':
             return X * (1. - X)
+        elif self.function == 'tanh':
+            return 1. - X ** 2
         elif self.function == 'relu':
             if self.copy:
                 X = np.copy(X)
             X[self.current_output <= 0] = 0
             return X
         elif self.function == 'softmax':
-            return X
+            return X * (1. - X)
         else:
             raise NotImplementedError()
 
