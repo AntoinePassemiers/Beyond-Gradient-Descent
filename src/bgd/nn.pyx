@@ -83,15 +83,14 @@ class NeuralStack:
                     extra_info = {'learning_rate': learning_rate, 'l2_reg': alpha}
                     error = layer.backward(error, extra_info)
                 
-                if validation_fraction > 0:
-                    val_probs = self.eval(X_val)
-                    val_accuracy = ((val_probs.argmax(axis=1) == y_val).sum() / len(y_val)) * 100
-                else:
-                    val_accuracy = '-'
-                
                 seen_instances += batch_size
                 epochs += 1
                 if seen_instances % print_every == 0:
+                    if validation_fraction > 0:
+                        val_probs = self.eval(X_val)
+                        val_accuracy = ((val_probs.argmax(axis=1) == y_val).sum() / len(y_val)) * 100
+                    else:
+                        val_accuracy = '-'
                     print('Loss at epoch {0}: {1: <10} - Validation accuracy: {2: <10}'.format(
                         str(epochs).ljust(7), loss, val_accuracy))
 
