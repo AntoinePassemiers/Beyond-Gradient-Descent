@@ -23,7 +23,7 @@ class MSE(Error):
         return (.5 * (y_hat - y) ** 2) / len(y)
     
     def grad(self, y, y_hat):
-        return (y_hat - y) / len(y)
+        return y_hat - y
 
 
 class CrossEntropy(Error):
@@ -34,4 +34,4 @@ class CrossEntropy(Error):
         return -np.sum(log_predictions) / len(log_predictions)
     
     def grad(self, y, probs):
-        return (probs - y) / len(y) # TODO: not sure about this one
+        return probs - y

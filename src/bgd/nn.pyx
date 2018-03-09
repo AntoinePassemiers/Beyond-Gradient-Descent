@@ -38,7 +38,8 @@ class NeuralStack:
             binary_y[:, c] = (y == c)
         return binary_y
 
-    def train(self, X, y, steps=10000, error_op='cross-entropy', batch_size=200, learning_rate=.01, alpha=.0001, print_every=50, validation_fraction=0.1):
+    def train(self, X, y, epochs=10000, error_op='cross-entropy', batch_size=200, learning_rate=.01, momentum=.9, alpha=.0001, print_every=50, validation_fraction=0.1):
+        assert(0 <= momentum <= 1)
         batch_size = min(len(X), batch_size)
         error_op = CrossEntropy() if error_op.lower() == 'cross-entropy' else MSE()
         errors = list()
@@ -59,8 +60,8 @@ class NeuralStack:
             if isinstance(layer, Dropout):
                 layer.activate()
 
-        epochs, seen_instances = 0, 0
-        for step in range(steps):
+        seen_instances = 0
+        for epoch in range(epochs):
             for batch_x, batch_y in self.mini_batches(X_train, y_train, batch_size=batch_size):
                 # Forward pass
                 probs = self.eval(batch_x)
@@ -69,10 +70,11 @@ class NeuralStack:
                 loss = error_op.eval(batch_y, probs)
 
                 # Apply L2 regularization
-                for layer in self.layers:
-                    params = layer.get_parameters()
-                    if params:
-                        loss += 0.5 * alpha * np.sum(params[0] ** 2)
+                if alpha > 0:
+                    for layer in self.layers:
+                        params = layer.get_parameters()
+                        if params:
+                            loss += 0.5 * alpha * np.sum(params[0] ** 2)
                 errors.append(loss)
 
                 # Compute gradient of the loss function
@@ -80,11 +82,11 @@ class NeuralStack:
 
                 # Propagate error through each layer
                 for layer in reversed(self.layers):
-                    extra_info = {'learning_rate': learning_rate, 'l2_reg': alpha}
+                    error = np.copy(error)
+                    extra_info = {'learning_rate': learning_rate, 'l2_reg': alpha, 'momentum': momentum}
                     error = layer.backward(error, extra_info)
                 
                 seen_instances += batch_size
-                epochs += 1
                 if seen_instances % print_every == 0:
                     if validation_fraction > 0:
                         val_probs = self.eval(X_val)
@@ -92,7 +94,7 @@ class NeuralStack:
                     else:
                         val_accuracy = '-'
                     print('Loss at epoch {0}: {1: <10} - Validation accuracy: {2: <10}'.format(
-                        str(epochs).ljust(7), loss, val_accuracy))
+                        str(epoch).ljust(7), loss, val_accuracy))
 
         # Deactivate dropout
         for layer in self.layers:
