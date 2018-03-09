@@ -68,7 +68,7 @@ class FullyConnected(Layer):
         if extra_info['l2_reg'] > 0:
             gradient_weights += extra_info['l2_reg'] * self.weights # Derivative of L2 regularization term
         gradient_bias = np.sum(error, axis=0, keepdims=True)
-        self.update(gradient_weights, gradient_bias, extra_info['learning_rate'] / batch_size, extra_info['momentum'])
+        self.update(gradient_weights, gradient_bias, extra_info['learning_rate'], extra_info['momentum'])
         return np.dot(error, self.weights.T)
 
     def update(self, dW, db, learning_rate, momentum):

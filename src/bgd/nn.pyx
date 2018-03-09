@@ -37,6 +37,13 @@ class NeuralStack:
         for c in range(n_classes):
             binary_y[:, c] = (y == c)
         return binary_y
+    
+    def split_train_val(self, X, y, validation_fraction):
+        split = int(len(X) * (1. - validation_fraction))
+        indices = np.arange(len(X))
+        np.random.shuffle(indices)
+        X, y = X[indices], np.squeeze(y[indices])
+        return X[:split], y[:split], X[split:], y[split:]
 
     def train(self, X, y, epochs=10000, error_op='cross-entropy', batch_size=200, learning_rate=.01, momentum=.9, alpha=.0001, print_every=50, validation_fraction=0.1):
         assert(0 <= momentum <= 1)
@@ -45,12 +52,7 @@ class NeuralStack:
         errors = list()
 
         # Split data into training data and validation data for early stopping
-        split = int(len(X) * (1. - validation_fraction))
-        indices = np.arange(len(X))
-        np.random.shuffle(indices)
-        X, y = X[indices], np.squeeze(y[indices])
-        X_train, y_train = X[:split], y[:split]
-        X_val, y_val = X[split:], y[split:]
+        X_train, y_train, X_val, y_val = self.split_train_val(X, y, validation_fraction)
 
         # Binarize labels if classification task
         y_train = self.binarize_labels(y_train)
