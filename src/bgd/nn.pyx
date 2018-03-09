@@ -9,6 +9,9 @@
 
 from bgd.layers import Activation, FullyConnected, Dropout
 from bgd.errors import MSE, CrossEntropy
+from bgd.optimizers import MomentumOptimizer, Optimizer
+
+import copy
 
 import numpy as np
 cimport numpy as cnp
@@ -45,11 +48,15 @@ class NeuralStack:
         X, y = X[indices], np.squeeze(y[indices])
         return X[:split], y[:split], X[split:], y[split:]
 
-    def train(self, X, y, epochs=10000, error_op='cross-entropy', batch_size=200, learning_rate=.01, momentum=.9, alpha=.0001, print_every=50, validation_fraction=0.1):
-        assert(0 <= momentum <= 1)
+    def train(self, X, y, epochs=10000, optimizer='default', error_op='cross-entropy', batch_size=200, alpha=.0001, print_every=50, validation_fraction=0.1):
         batch_size = min(len(X), batch_size)
         error_op = CrossEntropy() if error_op.lower() == 'cross-entropy' else MSE()
         errors = list()
+
+        # Check optimizer
+        if optimizer == 'default':
+            optimizer = MomentumOptimizer(learning_rate=.001, momentum=.9)
+        assert(isinstance(optimizer, Optimizer))
 
         # Split data into training data and validation data for early stopping
         X_train, y_train, X_val, y_val = self.split_train_val(X, y, validation_fraction)
@@ -62,9 +69,14 @@ class NeuralStack:
             if isinstance(layer, Dropout):
                 layer.activate()
 
+        # Create one independent optimizer per layer
+        optimizers = list()
+        for layer in self.layers:
+            optimizers.append(copy.deepcopy(optimizer))
+
         seen_instances = 0
         for epoch in range(epochs):
-            for batch_x, batch_y in self.mini_batches(X_train, y_train, batch_size=batch_size):
+            for batch_id, (batch_x, batch_y) in enumerate(self.mini_batches(X_train, y_train, batch_size=batch_size)):
                 # Forward pass
                 probs = self.eval(batch_x)
                 
@@ -83,9 +95,9 @@ class NeuralStack:
                 error = error_op.grad(batch_y, probs)
 
                 # Propagate error through each layer
-                for layer in reversed(self.layers):
+                for layer, optimizer in zip(reversed(self.layers), reversed(optimizers)):
                     error = np.copy(error)
-                    extra_info = {'learning_rate': learning_rate, 'l2_reg': alpha, 'momentum': momentum}
+                    extra_info = {'optimizer': optimizer, 'l2_reg': alpha}
                     error = layer.backward(error, extra_info)
                 
                 seen_instances += batch_size
@@ -95,8 +107,8 @@ class NeuralStack:
                         val_accuracy = ((val_probs.argmax(axis=1) == y_val).sum() / len(y_val)) * 100
                     else:
                         val_accuracy = '-'
-                    print('Loss at epoch {0}: {1: <10} - Validation accuracy: {2: <10}'.format(
-                        str(epoch).ljust(7), loss, val_accuracy))
+                    print('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation accuracy: {3: <15}'.format(
+                        epoch, str(batch_id) + ')', loss, val_accuracy))
 
         # Deactivate dropout
         for layer in self.layers:

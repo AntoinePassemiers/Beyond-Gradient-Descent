@@ -29,7 +29,7 @@ class MSE(Error):
 class CrossEntropy(Error):
 
     def eval(self, y, probs):
-        indices = np.argmax(y, axis = 1).astype(int)
+        indices = np.argmax(y, axis = 1).astype(np.int)
         log_predictions = np.log(probs[np.arange(len(probs)), indices])
         return -np.sum(log_predictions) / len(log_predictions)
     
