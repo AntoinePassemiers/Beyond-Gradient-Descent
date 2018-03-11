@@ -64,8 +64,9 @@ class FullyConnected(Layer):
         if extra_info['l2_reg'] > 0:
             gradient_weights += extra_info['l2_reg'] * self.weights # Derivative of L2 regularization term
         gradient_bias = np.sum(error, axis=0, keepdims=True) / batch_size
+        ret = np.dot(error, self.weights.T)
         self.update(gradient_weights, gradient_bias, extra_info['optimizer'])
-        return np.dot(error, self.weights.T)
+        return ret
 
     def update(self, dW, db, optimizer):
         self.weights -= optimizer.update(dW)
@@ -123,7 +124,7 @@ class Convolutional2D(Layer):
 
     def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True, copy=True, initializer=GaussianInitializer(0, .01)):
         Layer.__init__(self, copy=copy)
-        self.filter_shape = filter_shape
+        self.filter_shape = filter_shape  # [height, width, n_channels]
         self.strides = strides
         self.initializer = initializer
         self.with_bias = with_bias
@@ -149,6 +150,7 @@ class Convolutional2D(Layer):
     def _backward(self, error, extra_info={}):
         # TODO: Deep philosophical thoughts on backward convolution
         gradient_bias = np.sum(error, axis=(0, 2, 3))
+        
         # TODO: compute gradient_filters and call update
         return error
 
@@ -239,7 +241,7 @@ class Lambda(Layer):
         return self.forward_op(X)
     
     def _backward(self, error, extra_info={}):
-        return self.backward_op(X)
+        return self.backward_op(error)
     
     def get_parameters(self):
         return None
