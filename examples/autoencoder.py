@@ -24,18 +24,14 @@ X_train, X_test, _, _ = train_test_split(X, y, test_size=0.25)
 initializer = GaussianInitializer(0, .1)
 
 nn = NeuralStack()
-# nn.add(GaussianNoise(5, clip=None))
+nn.add(GaussianNoise(.2, clip=(0, 1)))
 nn.add(FullyConnected(28*28, 256, initializer=initializer))
 nn.add(Activation(function='sigmoid'))
-nn.add(FullyConnected(256, 128, initializer=initializer))
-nn.add(Activation(function='sigmoid'))
-nn.add(FullyConnected(128, 256, initializer=initializer))
-nn.add(Activation(function='sigmoid'))
 nn.add(FullyConnected(256, 28*28, initializer=initializer))
-nn.add(Activation(function='sigmoid'))
 
-optimizer = MomentumOptimizer(learning_rate=.005, momentum=.9)
-nn.train(X_train, X_train, error_op='mse', optimizer=optimizer, batch_size=256, alpha=0.0001, epochs=1, print_every=2)
+
+optimizer = MomentumOptimizer(learning_rate=.007, momentum=.9)
+nn.train(X_train, X_train, error_op='mse', optimizer=optimizer, batch_size=256, alpha=0.0001, epochs=5, print_every=4)
 
 f, axarr = plt.subplots(2,2)
 for i in range(2):

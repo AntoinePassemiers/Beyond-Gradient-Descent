@@ -54,7 +54,6 @@ class FullyConnected(Layer):
             self.biases = np.zeros((1, self.n_out), dtype=self.dtype)
         else:
             self.biases = None
-        self.previous_dW = None
 
     def _forward(self, X):
         return np.dot(X, self.weights) + self.biases
@@ -219,7 +218,7 @@ class GaussianNoise(Layer):
     def _forward(self, X):
         noised_X = X + np.random.normal(0, self.stdv)
         if self.clip:
-            noised_X = np.clip(noised_X, clip[0], clip[1])
+            noised_X = np.clip(noised_X, self.clip[0], self.clip[1])
         return noised_X
     
     def _backward(self, error, extra_info={}):

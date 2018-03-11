@@ -97,7 +97,6 @@ class NeuralStack:
 
                 # Propagate error through each layer
                 for layer, optimizer in zip(reversed(self.layers), reversed(optimizers)):
-                    error = np.copy(error)
                     extra_info = {'optimizer': optimizer, 'l2_reg': alpha}
                     error = layer.backward(error, extra_info)
                 
