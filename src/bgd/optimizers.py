@@ -22,7 +22,6 @@ class MomentumOptimizer(Optimizer):
         self.previous_grad = None
     
     def update(self, grad):
-        # TODO: divide learning rate by batch size ?
         delta = self.learning_rate * grad
         delta2 = 0
         if self.momentum > 0:

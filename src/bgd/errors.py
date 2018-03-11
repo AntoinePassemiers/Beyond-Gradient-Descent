@@ -20,7 +20,7 @@ class Error(metaclass=ABCMeta):
 class MSE(Error):
 
     def eval(self, y, y_hat):
-        return (.5 * (y_hat - y) ** 2) / len(y)
+        return np.sum((.5 * (y_hat - y) ** 2) / len(y))
     
     def grad(self, y, y_hat):
         return y_hat - y
@@ -29,7 +29,7 @@ class MSE(Error):
 class CrossEntropy(Error):
 
     def eval(self, y, probs):
-        indices = np.argmax(y, axis = 1).astype(np.int)
+        indices = np.argmax(y, axis=1).astype(np.int)
         log_predictions = np.log(probs[np.arange(len(probs)), indices])
         return -np.sum(log_predictions) / len(log_predictions)
     

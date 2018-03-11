@@ -56,18 +56,15 @@ class FullyConnected(Layer):
             self.biases = None
         self.previous_dW = None
 
-    def get_parameters(self):
-        return (self.weights, self.biases) if self.with_bias else (self.weights,)
-
     def _forward(self, X):
         return np.dot(X, self.weights) + self.biases
     
     def _backward(self, error, extra_info={}):
         batch_size = len(error)
-        gradient_weights = np.dot(self.current_input.T, error)
+        gradient_weights = np.dot(self.current_input.T, error) / batch_size
         if extra_info['l2_reg'] > 0:
             gradient_weights += extra_info['l2_reg'] * self.weights # Derivative of L2 regularization term
-        gradient_bias = np.sum(error, axis=0, keepdims=True)
+        gradient_bias = np.sum(error, axis=0, keepdims=True) / batch_size
         self.update(gradient_weights, gradient_bias, extra_info['optimizer'])
         return np.dot(error, self.weights.T)
 
@@ -77,6 +74,9 @@ class FullyConnected(Layer):
             # TODO: Apply optimization on biases as well
             self.biases -= optimizer.learning_rate * db
 
+    def get_parameters(self):
+        return (self.weights, self.biases) if self.with_bias else (self.weights,)
+
 
 class Activation(Layer):
 
@@ -84,9 +84,6 @@ class Activation(Layer):
         Layer.__init__(self, copy=copy)
         self.function = function.lower()
         self.copy = copy
-
-    def get_parameters(self):
-        return None
 
     def _forward(self, X):
         if self.function == 'sigmoid':
@@ -119,6 +116,9 @@ class Activation(Layer):
             raise NotImplementedError()
         return grad_X * error
 
+    def get_parameters(self):
+        return None
+
 
 class Convolutional2D(Layer):
 
@@ -137,9 +137,6 @@ class Convolutional2D(Layer):
         filters_shape = tuple([self.n_filters] + list(self.filter_shape))
         self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
         self.biases = np.zeros(self.n_filters, dtype=dtype)
-
-    def get_parameters(self):
-        return (self.filters, self.biases) if self.with_bias else (self.filters,)
 
     def _forward(self, X):
         if X.ndim == 3:
@@ -161,6 +158,9 @@ class Convolutional2D(Layer):
         if self.with_bias:
             self.biases -= learning_rate * np.sum(db, axis=0, keepdims=True)
 
+    def get_parameters(self):
+        return (self.filters, self.biases) if self.with_bias else (self.filters,)
+
 
 class Dropout(Layer):
 
@@ -176,9 +176,6 @@ class Dropout(Layer):
     def deactivate(self):
         self.active = False
     
-    def get_parameters(self):
-        return None
-    
     def _forward(self, X):
         if self.active:
             self.mask = (np.random.rand(*X.shape) > (1. - self.keep_proba))
@@ -189,6 +186,9 @@ class Dropout(Layer):
     def _backward(self, error, extra_info={}):
         assert(self.active)
         return self.mask * error
+    
+    def get_parameters(self):
+        return None
 
 
 class Flatten(Layer):
@@ -198,12 +198,49 @@ class Flatten(Layer):
         self.order = order
         self.in_shape = None
     
-    def get_parameters(self):
-        return None
-    
     def _forward(self, X):
         self.in_shape = X.shape
         return X.reshape((X.shape[0], -1), order=self.order)
     
     def _backward(self, error, extra_info={}):
         return error.reshape(self.in_shape, order=self.order)
+
+    def get_parameters(self):
+        return None
+
+
+class GaussianNoise(Layer):
+
+    def __init__(self, stdv, clip=(0, 1), copy=True):
+        Layer.__init__(self, copy=copy)
+        self.stdv = stdv
+        self.clip = clip
+    
+    def _forward(self, X):
+        noised_X = X + np.random.normal(0, self.stdv)
+        if self.clip:
+            noised_X = np.clip(noised_X, clip[0], clip[1])
+        return noised_X
+    
+    def _backward(self, error, extra_info={}):
+        return error
+
+    def get_parameters(self):
+        return None
+
+
+class Lambda(Layer):
+
+    def __init__(self, forward_op, backward_op, copy=True):
+        Layer.__init__(self, copy=copy)
+        self.forward_op = forward_op
+        self.backward_op = backward_op
+    
+    def _forward(self, X):
+        return self.forward_op(X)
+    
+    def _backward(self, error, extra_info={}):
+        return self.backward_op(X)
+    
+    def get_parameters(self):
+        return None

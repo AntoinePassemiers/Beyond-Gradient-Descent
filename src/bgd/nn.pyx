@@ -48,7 +48,7 @@ class NeuralStack:
         X, y = X[indices], np.squeeze(y[indices])
         return X[:split], y[:split], X[split:], y[split:]
 
-    def train(self, X, y, epochs=10000, optimizer='default', error_op='cross-entropy', batch_size=200, alpha=.0001, print_every=50, validation_fraction=0.1):
+    def train(self, X, y, epochs=1000, optimizer='default', error_op='cross-entropy', batch_size=200, alpha=.0001, print_every=50, validation_fraction=0.1):
         batch_size = min(len(X), batch_size)
         error_op = CrossEntropy() if error_op.lower() == 'cross-entropy' else MSE()
         errors = list()
@@ -62,7 +62,8 @@ class NeuralStack:
         X_train, y_train, X_val, y_val = self.split_train_val(X, y, validation_fraction)
 
         # Binarize labels if classification task
-        y_train = self.binarize_labels(y_train)
+        if isinstance(error_op, CrossEntropy):
+            y_train = self.binarize_labels(y_train)
 
         # Activate dropout
         for layer in self.layers:
@@ -78,10 +79,10 @@ class NeuralStack:
         for epoch in range(epochs):
             for batch_id, (batch_x, batch_y) in enumerate(self.mini_batches(X_train, y_train, batch_size=batch_size)):
                 # Forward pass
-                probs = self.eval(batch_x)
+                predictions = self.eval(batch_x)
                 
                 # Compute loss function
-                loss = error_op.eval(batch_y, probs)
+                loss = error_op.eval(batch_y, predictions)
 
                 # Apply L2 regularization
                 if alpha > 0:
@@ -92,7 +93,7 @@ class NeuralStack:
                 errors.append(loss)
 
                 # Compute gradient of the loss function
-                error = error_op.grad(batch_y, probs)
+                error = error_op.grad(batch_y, predictions)
 
                 # Propagate error through each layer
                 for layer, optimizer in zip(reversed(self.layers), reversed(optimizers)):
@@ -102,13 +103,23 @@ class NeuralStack:
                 
                 seen_instances += batch_size
                 if seen_instances % print_every == 0:
-                    if validation_fraction > 0:
-                        val_probs = self.eval(X_val)
-                        val_accuracy = ((val_probs.argmax(axis=1) == y_val).sum() / len(y_val)) * 100
+                    # Warning: This code section is ugly
+                    if isinstance(error_op, CrossEntropy):
+                        if validation_fraction > 0:
+                            val_probs = self.eval(X_val)
+                            val_accuracy = ((val_probs.argmax(axis=1) == y_val).sum() / len(y_val)) * 100
+                        else:
+                            val_accuracy = '-'
+                        print('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation accuracy: {3: <15}'.format(
+                            epoch, str(batch_id) + ')', loss, val_accuracy))
                     else:
-                        val_accuracy = '-'
-                    print('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation accuracy: {3: <15}'.format(
-                        epoch, str(batch_id) + ')', loss, val_accuracy))
+                        if validation_fraction > 0:
+                            val_preds = self.eval(X_val)
+                            val_mse = error_op.eval(batch_y, predictions)
+                        else:
+                            val_accuracy = '-'
+                        print('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation MSE: {3: <15}'.format(
+                            epoch, str(batch_id) + ')', loss, val_mse))
 
         # Deactivate dropout
         for layer in self.layers:
