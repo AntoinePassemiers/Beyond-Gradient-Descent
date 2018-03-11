@@ -45,18 +45,15 @@ def conv_2d_forward(data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] 
     cdef Py_ssize_t out_width = (width - filter_width + 1) // c_strides[1]
     cdef data_t[:, :, :, :] output = <data_t[:n_instances, :out_height, :out_width, :n_filters]>calloc(
         n_instances * out_height * out_width * n_filters, sizeof(data_t))
-    cdef data_t temp
     with nogil:
         for a in range(n_instances):
             for i in range(out_height):
                 for j in range(out_width):
                     for c in range(n_channels):
                         for f in range(n_filters):
-                            temp = 0
                             for k in range(filter_height):
                                 for l in range(filter_width):
-                                    temp += filters[f, k, l, c]
-                            output[a, i, j, f] += temp * X[a, i*c_strides[0], j*c_strides[1], c]
+                                    output[a, i, j, f] += filters[f, k, l, c] * X[a, i+k*c_strides[0], j+l*c_strides[1], c]
                         if add_bias:
                             output[a, i, j, f] += b[f] # Add intercept
     return np.asarray(output)
