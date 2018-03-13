@@ -106,10 +106,10 @@ class Activation(Layer):
         elif self.function == 'tanh':
             grad_X = 1. - X ** 2
         elif self.function == 'relu':
-            grad_X = X
+            grad_X = self.current_input
             if self.copy:
-                grad_X = np.empty_like(X)
-            grad_X[:] = (X >= 0)
+                grad_X = np.empty_like(grad_X)
+            grad_X[:] = (grad_X >= 0)
         elif self.function == 'softmax':
             grad_X = X * (1. - X)
         else:
@@ -147,17 +147,33 @@ class Convolutional2D(Layer):
         output = conv_2d_forward(X, self.filters, self.biases, self.strides, self.with_bias)
         return output
     
-    def _backward(self, error, extra_info={}):
-        # TODO: Deep philosophical thoughts on backward convolution
-        gradient_bias = np.sum(error, axis=(0, 2, 3))
+    def _backward(self, error, extra_info):
+        db = np.sum(error, axis=(0, 1, 2))  # sum on 3 first dimensions to only keep the 4th (i.e. n_filters)
+        if self.current_input.ndim == 3:
+            a = self.current_input[..., np.newaxis].transpose((3, 1, 2, 0))
+        else:
+            a = self.current_input.transpose((3, 1, 2, 0))
+        b = error.transpose((3, 1, 2, 0))
         
-        # TODO: compute gradient_filters and call update
-        return error
+        dW = conv_2d_forward(a, b, self.biases, self.strides, add_bias=False).transpose((3, 1, 2, 0))
+        #ret = conv_2d_backward(error, self.filters, self.strides) ## uncomment to compute error to propagate
+        ret = None
+        self.update(dW, db, extra_info['optimizer'])
+        return ret
 
-    def update(self, dW, db, learning_rate):
+    def update(self, dW, db, optimizer):
+        learning_rate = optimizer.learning_rate
+        #learning_rate = .1
+        dW_norm = np.sqrt(np.sum(dW*dW))
+        # try to clip gradient... Didn't work...
+        if dW_norm > 1:
+            dW /= dW_norm
         self.filters -= learning_rate * dW
         if self.with_bias:
-            self.biases -= learning_rate * np.sum(db, axis=0, keepdims=True)
+            db_norm = np.sqrt(np.sum(db*db))
+            if db_norm > 1:
+                db /= db_norm
+            self.biases -= learning_rate * db
 
     def get_parameters(self):
         return (self.filters, self.biases) if self.with_bias else (self.filters,)

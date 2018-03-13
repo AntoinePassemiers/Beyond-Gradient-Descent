@@ -13,6 +13,7 @@ cnp.import_array()
 
 from libc.stdlib cimport calloc
 
+### TODO: currently, allocated memory for convolution is never set free. Should be corrected eventually (quite soon actually)!
 
 cdef fused data_t:
     cnp.int_t
@@ -23,26 +24,57 @@ cdef fused data_t:
     cnp.float_t
     cnp.float32_t
     cnp.float64_t
-    
 
 def test():
     with nogil:
         pass
-    print("Mangez des pommes. La pomme est un fruit... sympathique, je l'observe tous les jours.")
+    print("c'est loin mais c'est beau !")
 
+### Needs to be debugged after weight update has been corrected
+def conv_2d_backward(data_t[:, :, :, :] delta, data_t[:, :, :, :] filters, object strides):
+    cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
+    cdef unsigned int n_instances = delta.shape[0]
+    cdef unsigned int height = delta.shape[1]
+    cdef unsigned int width = delta.shape[2]
+    cdef unsigned int n_channels = delta.shape[3]
+    cdef unsigned int filter_height = filters.shape[1]
+    cdef unsigned int filter_width = filters.shape[2]
+    cdef unsigned int n_filters = filters.shape[3]
+    cdef unsigned int out_height = (height + filter_height - 1) // c_strides[0]
+    cdef unsigned int out_width = (width + filter_width - 1) // c_strides[1]
+    cdef data_t[:, :, :, :] output = <data_t[:n_instances, :out_height, :out_width, :n_filters]>calloc(
+        n_instances * out_height * out_width * n_filters, sizeof(data_t))
+    cdef unsigned int instance, i, j, f, h, w, c, alpha, beta, h_0
+    with nogil:
+        for instance in range(n_instances):
+            for i in range(out_height):
+                for j in range(out_width):
+                    # from here, index twisting should be continued in order to avoid looping for nothing
+                    h_0 = 0 if i <= filter_height else i-filter_height-1
+                    for h in range(h_0, min(height, i+1)):
+                        # And this, here, is some pretty nasty non-twisting aftermath (after math, get it? I am lonely)
+                        if 0 <= i-h < filter_height:
+                            w_0 = 0 if j <= filter_width else j-filter_width-1
+                            for w in range(w_0, min(width, j+1)):
+                                if 0 <= j-w < filter_width:
+                                    for c in range(n_channels):
+                                        for f in range(n_filters):
+                                            output[instance, i, j, f] += delta[instance, h, w, c] * filters[c, i-h, j-w, f]
+                                            
+    return np.asarray(output)
 
 def conv_2d_forward(data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] b, object strides, bint add_bias):
-    cdef Py_ssize_t a, c, f, i, j, k, l
+    cdef unsigned int a, c, f, i, j, k, l
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
-    cdef Py_ssize_t n_instances = X.shape[0]
-    cdef Py_ssize_t height = X.shape[1]
-    cdef Py_ssize_t width = X.shape[2]
-    cdef Py_ssize_t n_channels = X.shape[3]
-    cdef Py_ssize_t n_filters = filters.shape[0]
-    cdef Py_ssize_t filter_height = filters.shape[1]
-    cdef Py_ssize_t filter_width = filters.shape[2]
-    cdef Py_ssize_t out_height = (height - filter_height + 1) // c_strides[0]
-    cdef Py_ssize_t out_width = (width - filter_width + 1) // c_strides[1]
+    cdef unsigned int n_instances = X.shape[0]
+    cdef unsigned int height = X.shape[1]
+    cdef unsigned int width = X.shape[2]
+    cdef unsigned int n_channels = X.shape[3]
+    cdef unsigned int n_filters = filters.shape[0]
+    cdef unsigned int filter_height = filters.shape[1]
+    cdef unsigned int filter_width = filters.shape[2]
+    cdef unsigned int out_height = height - (filter_height - 1) * c_strides[0]
+    cdef unsigned int out_width = width  - (filter_width - 1) * c_strides[1]
     cdef data_t[:, :, :, :] output = <data_t[:n_instances, :out_height, :out_width, :n_filters]>calloc(
         n_instances * out_height * out_width * n_filters, sizeof(data_t))
     with nogil:
@@ -53,7 +85,7 @@ def conv_2d_forward(data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] 
                         for f in range(n_filters):
                             for k in range(filter_height):
                                 for l in range(filter_width):
-                                    output[a, i, j, f] += filters[f, k, l, c] * X[a, i+k*c_strides[0], j+l*c_strides[1], c]
+                                    output[a, i, j, f] += filters[f, k, l, c] * X[a, k+i*c_strides[0], l+j*c_strides[1], c]
                         if add_bias:
-                            output[a, i, j, f] += b[f] # Add intercept
+                            output[a, i, j, f] += b[f]  # Add intercept
     return np.asarray(output)

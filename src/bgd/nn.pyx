@@ -31,7 +31,7 @@ class NeuralStack:
         if shuffle:
             np.random.shuffle(indices)
         for i in indices:
-            yield X[i:i+batch_size], y[i:i+batch_size]
+            yield X[i:i + batch_size], y[i:i + batch_size]
 
     def binarize_labels(self, y):
         unique_values = np.unique(y)
@@ -59,7 +59,10 @@ class NeuralStack:
         assert(isinstance(optimizer, Optimizer))
 
         # Split data into training data and validation data for early stopping
-        X_train, y_train, X_val, y_val = self.split_train_val(X, y, validation_fraction)
+        if validation_fraction > 0:
+            X_train, y_train, X_val, y_val = self.split_train_val(X, y, validation_fraction)
+        else:
+            X_train, y_train = X, y
 
         # Binarize labels if classification task
         if isinstance(error_op, CrossEntropy):
@@ -90,7 +93,7 @@ class NeuralStack:
                         params = layer.get_parameters()
                         if params:
                             loss += 0.5 * alpha * np.sum(params[0] ** 2)
-                errors.append(loss)
+                # errors.append(loss)
 
                 # Compute gradient of the loss function
                 error = error_op.grad(batch_y, predictions)
@@ -109,7 +112,7 @@ class NeuralStack:
                             val_accuracy = ((val_probs.argmax(axis=1) == y_val).sum() / len(y_val)) * 100
                         else:
                             val_accuracy = '-'
-                        print('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation accuracy: {3: <15}'.format(
+                        print('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation accuracy: {3:.1f}'.format(
                             epoch, str(batch_id) + ')', loss, val_accuracy))
                     else:
                         if validation_fraction > 0:
