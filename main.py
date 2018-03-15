@@ -3,7 +3,7 @@
 # author : Antoine Passemiers, Robin Petit
 
 from bgd.nn import NeuralStack
-from bgd.layers import FullyConnected, Activation, Flatten, Convolutional2D, Dropout
+from bgd.layers import FullyConnected, Activation, Flatten, Convolutional2D, MaxPooling2D, Dropout
 from bgd.initializers import GaussianInitializer, UniformInitializer
 from bgd.optimizers import MomentumOptimizer, AdamOptimizer
 
@@ -20,6 +20,7 @@ print('')
 
 dataset = 'mnist'
 
+
 if __name__ == '__main__':
     if dataset == 'mnist':
         mnist = fetch_mldata("MNIST original")
@@ -28,19 +29,20 @@ if __name__ == '__main__':
         y = np.reshape(mnist.target, (mnist.target.shape[0]))
         X = X.reshape((X.shape[0], 28, 28, 1))  # New shape: (None, 28, 28, 1)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-        batch_size = 256
+        batch_size = 128
+
+        optimizer = AdamOptimizer(learning_rate=.005)
 
         nn = NeuralStack()
-        nn.add(Convolutional2D([4, 4, 1], 32, strides=(2, 2)))
+        nn.add(Convolutional2D([3, 3, 1], 32))
         nn.add(Activation('relu'))
-        #nn.add(Convolutional2D([3, 3, 32], 32, strides=(1, 1)))
-        #nn.add(Activation('relu'))
-        #nn.add(Convolutional2D([2, 2, 32], 64, strides=(1, 1)))
-        #nn.add(Activation('relu'))
+        nn.add(MaxPooling2D([2, 2], [2, 2]))
+        nn.add(Dropout(.75))
         nn.add(Flatten())
-        nn.add(FullyConnected(4608, 200))
+        nn.add(FullyConnected(4608, 128))
         nn.add(Activation('relu'))
-        nn.add(FullyConnected(200, 10))
+        nn.add(Dropout(.5))
+        nn.add(FullyConnected(128, 10))
         nn.add(Activation('softmax'))
 
     elif dataset == 'digits':
@@ -51,6 +53,7 @@ if __name__ == '__main__':
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
         batch_size = len(X_train)
 
+        optimizer = AdamOptimizer()
         nn = NeuralStack()
         nn.add(Convolutional2D([4, 4, 1], 32, strides=(1, 1)))
         nn.add(Activation('relu'))
@@ -64,8 +67,8 @@ if __name__ == '__main__':
         nn.add(FullyConnected(200, 10))
         nn.add(Activation('softmax'))
 
-    optimizer = AdamOptimizer()
-    nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size, epochs=1000, print_every=10*batch_size, validation_fraction=0.1, alpha=.001)
+    
+    nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size, epochs=1000, print_every=1, validation_fraction=0.1, alpha=.001)
 
     '''# digits
     nn = NeuralStack()

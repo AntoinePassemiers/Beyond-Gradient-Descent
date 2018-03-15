@@ -152,12 +152,10 @@ class Convolutional2D(Layer):
         if self.filters is None:
             self.init_weights(X.dtype, X.shape)
         # TODO: apply convolution with numpy or cython ?
-        if X.shape[0] == self.out_buffer.shape[0]:
-            buffer = self.out_buffer
-        else:
-            buffer = np.empty([X.shape[0]] + list(self.out_buffer.shape)[1:])
-        output = conv_2d_forward(buffer, X, self.filters, self.biases, self.strides, self.with_bias)
-        return output
+        if X.shape[0] > self.out_buffer.shape[0]:
+            self.out_buffer = np.empty([X.shape[0]] + list(self.out_buffer.shape)[1:])
+        output = conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias)
+        return output[:X.shape[0], :, :, :]
 
     def _backward(self, error, extra_info):
         db = np.sum(error, axis=(0, 1, 2))  # sum on 3 first dimensions to only keep the 4th (i.e. n_filters)
@@ -183,6 +181,34 @@ class Convolutional2D(Layer):
 
     def get_parameters(self):
         return (self.filters, self.biases) if self.with_bias else (self.filters,)
+
+
+class MaxPooling2D(Layer):
+
+    def __init__(self, pool_shape, strides=[1, 1], copy=True):
+        Layer.__init__(self, copy=copy)
+        self.pool_shape = pool_shape
+        self.strides = strides
+        self.mask = None
+        self.out_buffer = None
+        self.in_buffer = None
+
+    def _forward(self, X):
+        if self.out_buffer is None or X.shape[0] > self.out_buffer.shape[0]:
+            out_height = (X.shape[1] - self.pool_shape[0] + 1) // self.strides[0]
+            out_width = (X.shape[2] - self.pool_shape[1] + 1) // self.strides[1]
+            self.out_buffer = np.empty((X.shape[0], out_height, out_width, X.shape[3]), dtype=X.dtype)
+            self.in_buffer = np.empty_like(X)
+            self.mask = np.empty(X.shape, dtype=np.int8)
+        max_pooling_2d_forward(self.out_buffer, self.mask, X, self.pool_shape, self.strides)
+        return self.out_buffer[:X.shape[0], :, :, :]
+    
+    def _backward(self, error, extra_info={}):
+        max_pooling_2d_backward(self.in_buffer, error, self.mask, self.pool_shape, self.strides)
+        return self.in_buffer[:error.shape[0], :, :, :]
+    
+    def get_parameters(self):
+        return None
 
 
 class Dropout(Layer):
