@@ -2,6 +2,7 @@
 *.pyd
 *.o
 *.c
+*.pickle
 .*
 
 bgd.egg-info/

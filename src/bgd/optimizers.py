@@ -9,8 +9,13 @@ import numpy as np
 class Optimizer(metaclass=ABCMeta):
 
     @abstractmethod
-    def update(self, grad):
+    def _update(self, grad):
         pass
+    
+    def update(self, grad):
+        in_shape = grad.shape
+        delta = self._update(grad.flatten(order='C'))
+        return delta.reshape(in_shape, order='C')
 
 
 class MomentumOptimizer(Optimizer):
@@ -21,7 +26,7 @@ class MomentumOptimizer(Optimizer):
         self.momentum = momentum
         self.previous_grad = None
     
-    def update(self, grad):
+    def _update(self, grad):
         delta = self.learning_rate * grad
         delta2 = 0
         if self.momentum > 0:
@@ -50,7 +55,7 @@ class AdamOptimizer(Optimizer):
         self.moment_1 = 0
         self.moment_2 = 0
     
-    def update(self, grad):
+    def _update(self, grad):
         self.step += 1
         self.moment_1 = self.beta_1 * self.moment_1 + (1. - self.beta_1) * grad
         self.moment_2 = self.beta_2 * self.moment_2 + (1. - self.beta_2) * grad ** 2

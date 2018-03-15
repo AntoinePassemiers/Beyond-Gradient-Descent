@@ -109,6 +109,7 @@ class NeuralStack:
                     if isinstance(error_op, CrossEntropy):
                         if validation_fraction > 0:
                             val_probs = self.eval(X_val)
+                            assert(len(val_probs) == len(y_val))
                             val_accuracy = ((val_probs.argmax(axis=1) == y_val).sum() / len(y_val)) * 100
                         else:
                             val_accuracy = '-'

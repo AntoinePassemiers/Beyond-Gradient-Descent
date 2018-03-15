@@ -132,19 +132,29 @@ class Convolutional2D(Layer):
         assert(len(filter_shape) == 3)
         self.filters = None
         self.biases = None
+        self.in_buffer = None
+        self.out_buffer = None
 
-    def init_weights(self, dtype):
+    def init_weights(self, dtype, in_shape):
         filters_shape = tuple([self.n_filters] + list(self.filter_shape))
         self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
         self.biases = np.zeros(self.n_filters, dtype=dtype)
+
+        out_height = (in_shape[1] - self.filter_shape[0] + 1) // self.strides[0]
+        out_width = (in_shape[2] - self.filter_shape[1] + 1) // self.strides[1]
+        out_shape = (in_shape[0], out_height, out_width, self.n_filters)
+        transposed_filters_shape = (filters_shape[3], filters_shape[1], filters_shape[2], filters_shape[0])
+        self.out_buffer = np.empty(out_shape, dtype=dtype)
+        self.in_buffer = np.empty(transposed_filters_shape, dtype=dtype)
 
     def _forward(self, X):
         if X.ndim == 3:
             X = X[..., np.newaxis]
         if self.filters is None:
-            self.init_weights(X.dtype)
+            self.init_weights(X.dtype, X.shape)
         # TODO: apply convolution with numpy or cython ?
-        output = conv_2d_forward(X, self.filters, self.biases, self.strides, self.with_bias)
+        output = conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias)
+        print(X.shape, self.filters.shape, self.out_buffer.shape)
         return output
     
     def _backward(self, error, extra_info):
@@ -154,8 +164,10 @@ class Convolutional2D(Layer):
         else:
             a = self.current_input.transpose((3, 1, 2, 0))
         b = error.transpose((3, 1, 2, 0))
-        
-        dW = conv_2d_forward(a, b, self.biases, self.strides, add_bias=False).transpose((3, 1, 2, 0))
+        print(a.shape, b.shape, self.in_buffer.shape)
+        dW = conv_2d_forward(self.in_buffer, a, b, self.biases, self.strides, add_bias=False).transpose((3, 1, 2, 0))
+        if extra_info['l2_reg'] > 0:
+            dW += extra_info['l2_reg'] * self.filters # Derivative of L2 regularization term
         #ret = conv_2d_backward(error, self.filters, self.strides) ## uncomment to compute error to propagate
         ret = None
         self.update(dW, db, extra_info['optimizer'])
@@ -163,16 +175,8 @@ class Convolutional2D(Layer):
 
     def update(self, dW, db, optimizer):
         learning_rate = optimizer.learning_rate
-        #learning_rate = .1
-        dW_norm = np.sqrt(np.sum(dW*dW))
-        # try to clip gradient... Didn't work...
-        if dW_norm > 1:
-            dW /= dW_norm
         self.filters -= learning_rate * dW
         if self.with_bias:
-            db_norm = np.sqrt(np.sum(db*db))
-            if db_norm > 1:
-                db /= db_norm
             self.biases -= learning_rate * db
 
     def get_parameters(self):

@@ -8,8 +8,12 @@ import numpy as np
 
 class Error(metaclass=ABCMeta):
     
-    @abstractmethod
     def eval(self, X, Y):
+        assert(len(X) == len(Y))
+        return self._eval(X, Y)
+
+    @abstractmethod
+    def _eval(self, X, Y):
         pass
     
     @abstractmethod
@@ -19,7 +23,7 @@ class Error(metaclass=ABCMeta):
 
 class MSE(Error):
 
-    def eval(self, y, y_hat):
+    def _eval(self, y, y_hat):
         return np.sum((.5 * (y_hat - y) ** 2) / len(y))
     
     def grad(self, y, y_hat):
@@ -28,7 +32,7 @@ class MSE(Error):
 
 class CrossEntropy(Error):
 
-    def eval(self, y, probs):
+    def _eval(self, y, probs):
         indices = np.argmax(y, axis=1).astype(np.int)
         log_predictions = np.log(probs[np.arange(len(probs)), indices])
         return -np.sum(log_predictions) / len(log_predictions)

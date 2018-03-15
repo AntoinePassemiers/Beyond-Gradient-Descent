@@ -18,7 +18,7 @@ np.seterr(all='raise', over='warn', under='warn')
 np.random.seed(0xCAFE)
 print('')
 
-dataset = 'digits'
+dataset = 'mnist'
 
 if __name__ == '__main__':
     if dataset == 'mnist':
@@ -28,27 +28,44 @@ if __name__ == '__main__':
         y = np.reshape(mnist.target, (mnist.target.shape[0]))
         X = X.reshape((X.shape[0], 28, 28, 1)) # New shape: (None, 28, 28, 1)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+        batch_size = 256
+
+        nn = NeuralStack()
+        nn.add(Convolutional2D([4, 4, 1], 32, strides=(2, 2)))
+        nn.add(Activation('relu'))
+        #nn.add(Convolutional2D([3, 3, 32], 32, strides=(1, 1)))
+        #nn.add(Activation('relu'))
+        #nn.add(Convolutional2D([2, 2, 32], 64, strides=(1, 1)))
+        #nn.add(Activation('relu'))
+        nn.add(Flatten())
+        nn.add(FullyConnected(4608, 200))
+        nn.add(Activation('relu'))
+        nn.add(FullyConnected(200, 10))
+        nn.add(Activation('softmax'))
+
     elif dataset == 'digits':
         digits = load_digits()
         X = digits.images 
         y = digits.target
         X = X.reshape((X.shape[0], 8, 8, 1))
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+        batch_size = len(X_train)
     
-    nn = NeuralStack()
-    nn.add(Convolutional2D([4, 4, 1], 32, strides=(1, 1)))
-    nn.add(Activation('sigmoid'))
-    #nn.add(Convolutional2D([3, 3, 32], 32, strides=(1, 1)))
-    #nn.add(Activation('relu'))
-    #nn.add(Convolutional2D([2, 2, 32], 64, strides=(1, 1)))
-    #nn.add(Activation('relu'))
-    nn.add(Flatten())
-    nn.add(FullyConnected(800, 1024))
-    nn.add(Activation('sigmoid'))
-    nn.add(FullyConnected(1024, 10))
-    nn.add(Activation('softmax'))
+        nn = NeuralStack()
+        nn.add(Convolutional2D([4, 4, 1], 32, strides=(1, 1)))
+        nn.add(Activation('relu'))
+        #nn.add(Convolutional2D([3, 3, 32], 32, strides=(1, 1)))
+        #nn.add(Activation('relu'))
+        #nn.add(Convolutional2D([2, 2, 32], 64, strides=(1, 1)))
+        #nn.add(Activation('relu'))
+        nn.add(Flatten())
+        nn.add(FullyConnected(800, 200))
+        nn.add(Activation('sigmoid'))
+        nn.add(FullyConnected(200, 10))
+        nn.add(Activation('softmax'))
     
     optimizer = AdamOptimizer()
-    nn.train(X, y, optimizer=optimizer, batch_size=len(X), epochs=1000, print_every=len(X), validation_fraction=0.25, alpha=.001)
+    nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size, epochs=1000, print_every=batch_size, validation_fraction=0.25, alpha=.001)
     
     '''# digits
     nn = NeuralStack()

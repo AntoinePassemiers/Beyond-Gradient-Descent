@@ -2,18 +2,11 @@
 # operators.pyx
 # author : Antoine Passemiers, Robin Petit
 # distutils: language=c
-# cython: boundscheck=False
-# cython: initializedcheck=False
-# cython: nonecheck=False
-# cython: overflowcheck=False
 
 import numpy as np
 cimport numpy as cnp
 cnp.import_array()
 
-from libc.stdlib cimport calloc
-
-### TODO: currently, allocated memory for convolution is never set free. Should be corrected eventually (quite soon actually)!
 
 cdef fused data_t:
     cnp.int_t
@@ -25,13 +18,18 @@ cdef fused data_t:
     cnp.float32_t
     cnp.float64_t
 
+
 def test():
     with nogil:
         pass
     print("c'est loin mais c'est beau !")
 
+
+
+# TODO: add padding
+
 ### Needs to be debugged after weight update has been corrected
-def conv_2d_backward(data_t[:, :, :, :] delta, data_t[:, :, :, :] filters, object strides):
+def conv_2d_backward(data_t[:, :, :, :] output, data_t[:, :, :, :] delta, data_t[:, :, :, :] filters, object strides):
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
     cdef unsigned int n_instances = delta.shape[0]
     cdef unsigned int height = delta.shape[1]
@@ -42,9 +40,8 @@ def conv_2d_backward(data_t[:, :, :, :] delta, data_t[:, :, :, :] filters, objec
     cdef unsigned int n_filters = filters.shape[3]
     cdef unsigned int out_height = (height + filter_height - 1) // c_strides[0]
     cdef unsigned int out_width = (width + filter_width - 1) // c_strides[1]
-    cdef data_t[:, :, :, :] output = <data_t[:n_instances, :out_height, :out_width, :n_filters]>calloc(
-        n_instances * out_height * out_width * n_filters, sizeof(data_t))
     cdef unsigned int instance, i, j, f, h, w, c, alpha, beta, h_0
+    np.asarray(output)[:, :, :, :] = 0
     with nogil:
         for instance in range(n_instances):
             for i in range(out_height):
@@ -61,9 +58,8 @@ def conv_2d_backward(data_t[:, :, :, :] delta, data_t[:, :, :, :] filters, objec
                                         for f in range(n_filters):
                                             output[instance, i, j, f] += delta[instance, h, w, c] * filters[c, i-h, j-w, f]
                                             
-    return np.asarray(output)
 
-def conv_2d_forward(data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] b, object strides, bint add_bias):
+def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] b, object strides, bint add_bias):
     cdef unsigned int a, c, f, i, j, k, l
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
     cdef unsigned int n_instances = X.shape[0]
@@ -73,10 +69,9 @@ def conv_2d_forward(data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] 
     cdef unsigned int n_filters = filters.shape[0]
     cdef unsigned int filter_height = filters.shape[1]
     cdef unsigned int filter_width = filters.shape[2]
-    cdef unsigned int out_height = height - (filter_height - 1) * c_strides[0]
-    cdef unsigned int out_width = width  - (filter_width - 1) * c_strides[1]
-    cdef data_t[:, :, :, :] output = <data_t[:n_instances, :out_height, :out_width, :n_filters]>calloc(
-        n_instances * out_height * out_width * n_filters, sizeof(data_t))
+    cdef unsigned int out_height = (height - filter_height + 1) // c_strides[0]
+    cdef unsigned int out_width = (width  - filter_width + 1) // c_strides[1]
+    np.asarray(output)[:, :, :, :] = 0
     with nogil:
         for a in range(n_instances):
             for i in range(out_height):
@@ -88,4 +83,4 @@ def conv_2d_forward(data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] 
                                     output[a, i, j, f] += filters[f, k, l, c] * X[a, k+i*c_strides[0], l+j*c_strides[1], c]
                         if add_bias:
                             output[a, i, j, f] += b[f]  # Add intercept
-    return np.asarray(output)
+    return np.asarray(output)[:n_instances, :out_height, :out_width, :n_filters]

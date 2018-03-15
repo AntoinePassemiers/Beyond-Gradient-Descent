@@ -3,10 +3,11 @@
 # author : Antoine Passemiers, Robin Petit
 
 from bgd.nn import NeuralStack
-from bgd.layers import FullyConnected, Activation, Convolutional2D, GaussianNoise
+from bgd.layers import FullyConnected, Activation, Convolutional2D, GaussianNoise, Dropout
 from bgd.initializers import GaussianInitializer, UniformInitializer
 from bgd.optimizers import MomentumOptimizer, AdamOptimizer
 
+import pickle
 import numpy as np
 from sklearn.datasets import fetch_mldata
 from sklearn.preprocessing import LabelBinarizer
@@ -25,13 +26,21 @@ initializer = GaussianInitializer(0, .1)
 
 nn = NeuralStack()
 nn.add(GaussianNoise(.2, clip=(0, 1)))
-nn.add(FullyConnected(28*28, 256, initializer=initializer))
-nn.add(Activation(function='sigmoid'))
-nn.add(FullyConnected(256, 28*28, initializer=initializer))
+nn.add(FullyConnected(28*28, 50, initializer=initializer))
+nn.add(Activation(function='tanh'))
+nn.add(FullyConnected(50, 50, initializer=initializer))
+nn.add(Activation(function='tanh'))
+nn.add(FullyConnected(50, 2, initializer=initializer))
+nn.add(Activation(function='tanh'))
+nn.add(FullyConnected(2, 50, initializer=initializer))
+nn.add(Activation(function='tanh'))
+nn.add(FullyConnected(50, 50, initializer=initializer))
+nn.add(Activation(function='tanh'))
+nn.add(FullyConnected(50, 28*28, initializer=initializer))
 
 
-optimizer = MomentumOptimizer(learning_rate=.007, momentum=.9)
-nn.train(X_train, X_train, error_op='mse', optimizer=optimizer, batch_size=256, alpha=0.0001, epochs=5, print_every=4)
+optimizer = AdamOptimizer(learning_rate=.01)
+nn.train(X_train, X_train, error_op='mse', optimizer=optimizer, batch_size=32, alpha=0.001, epochs=6, print_every=10)
 
 f, axarr = plt.subplots(2,2)
 for i in range(2):
@@ -40,3 +49,5 @@ for i in range(2):
     axarr[i, 0].imshow(img)
     axarr[i, 1].imshow(img_prime)
 plt.show()
+
+pickle.dump(nn, open('autoencoder.pickle', 'wb'))
