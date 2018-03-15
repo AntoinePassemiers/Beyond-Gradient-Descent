@@ -23,10 +23,10 @@ dataset = 'mnist'
 if __name__ == '__main__':
     if dataset == 'mnist':
         mnist = fetch_mldata("MNIST original")
-        #X = (mnist.data / 255 - .5) * 2
-        X = np.asarray(mnist.data, dtype=np.float)
+        X = mnist.data / 255
+        #X = np.asarray(mnist.data, dtype=np.float)
         y = np.reshape(mnist.target, (mnist.target.shape[0]))
-        X = X.reshape((X.shape[0], 28, 28, 1)) # New shape: (None, 28, 28, 1)
+        X = X.reshape((X.shape[0], 28, 28, 1))  # New shape: (None, 28, 28, 1)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
         batch_size = 256
 
@@ -45,12 +45,12 @@ if __name__ == '__main__':
 
     elif dataset == 'digits':
         digits = load_digits()
-        X = digits.images 
+        X = digits.images
         y = digits.target
         X = X.reshape((X.shape[0], 8, 8, 1))
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
         batch_size = len(X_train)
-    
+
         nn = NeuralStack()
         nn.add(Convolutional2D([4, 4, 1], 32, strides=(1, 1)))
         nn.add(Activation('relu'))
@@ -63,10 +63,10 @@ if __name__ == '__main__':
         nn.add(Activation('sigmoid'))
         nn.add(FullyConnected(200, 10))
         nn.add(Activation('softmax'))
-    
+
     optimizer = AdamOptimizer()
-    nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size, epochs=1000, print_every=batch_size, validation_fraction=0.25, alpha=.001)
-    
+    nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size, epochs=1000, print_every=10*batch_size, validation_fraction=0.1, alpha=.001)
+
     '''# digits
     nn = NeuralStack()
     nn.add(Convolutional2D([3, 3, 1], 32, strides=[1, 1]))

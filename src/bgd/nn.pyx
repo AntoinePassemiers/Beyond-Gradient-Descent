@@ -22,10 +22,10 @@ class NeuralStack:
 
     def __init__(self):
         self.layers = list()
-        
+
     def add(self, layer):
         self.layers.append(layer)
-    
+
     def mini_batches(self, X, y, batch_size=50, shuffle=True):
         indices = np.arange(0, len(X), batch_size)
         if shuffle:
@@ -40,7 +40,7 @@ class NeuralStack:
         for c in range(n_classes):
             binary_y[:, c] = (y == c)
         return binary_y
-    
+
     def split_train_val(self, X, y, validation_fraction):
         split = int(len(X) * (1. - validation_fraction))
         indices = np.arange(len(X))
@@ -83,7 +83,7 @@ class NeuralStack:
             for batch_id, (batch_x, batch_y) in enumerate(self.mini_batches(X_train, y_train, batch_size=batch_size)):
                 # Forward pass
                 predictions = self.eval(batch_x)
-                
+
                 # Compute loss function
                 loss = error_op.eval(batch_y, predictions)
 
@@ -102,9 +102,10 @@ class NeuralStack:
                 for layer, optimizer in zip(reversed(self.layers), reversed(optimizers)):
                     extra_info = {'optimizer': optimizer, 'l2_reg': alpha}
                     error = layer.backward(error, extra_info)
-                
+
                 seen_instances += batch_size
                 if seen_instances % print_every == 0:
+                    batch_id += 1
                     # Warning: This code section is ugly
                     if isinstance(error_op, CrossEntropy):
                         if validation_fraction > 0:
@@ -128,9 +129,9 @@ class NeuralStack:
         for layer in self.layers:
             if isinstance(layer, Dropout):
                 layer.deactivate()
-        
+
         return errors
-        
+
     def eval(self, X):
         for layer in self.layers:
             X = layer.forward(X)

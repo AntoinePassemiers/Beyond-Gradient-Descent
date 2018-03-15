@@ -15,7 +15,7 @@ class Layer(metaclass=ABCMeta):
         self.copy = copy
         self.current_input = None
         self.current_output = None
-    
+
     @abstractmethod
     def get_parameters(self):
         pass
@@ -23,7 +23,7 @@ class Layer(metaclass=ABCMeta):
     @abstractmethod
     def _forward(self, X):
         pass
-    
+
     @abstractmethod
     def _backward(self, X):
         pass
@@ -35,7 +35,7 @@ class Layer(metaclass=ABCMeta):
             if np.may_share_memory(X, self.current_output, np.core.multiarray.MAY_SHARE_BOUNDS):
                 self.current_output = np.copy(self.current_output)
         return self.current_output
-    
+
     def backward(self, *args, **kwargs):
         return self._backward(*args, **kwargs)
 
@@ -57,7 +57,7 @@ class FullyConnected(Layer):
 
     def _forward(self, X):
         return np.dot(X, self.weights) + self.biases
-    
+
     def _backward(self, error, extra_info={}):
         batch_size = len(error)
         gradient_weights = np.dot(self.current_input.T, error) / batch_size
@@ -98,7 +98,7 @@ class Activation(Layer):
         else:
             raise NotImplementedError()
         return out
-    
+
     def _backward(self, error, extra_info={}):
         X = self.current_output
         if self.function == 'sigmoid':
@@ -140,12 +140,11 @@ class Convolutional2D(Layer):
         self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
         self.biases = np.zeros(self.n_filters, dtype=dtype)
 
-        out_height = (in_shape[1] - self.filter_shape[0] + 1) // self.strides[0]
-        out_width = (in_shape[2] - self.filter_shape[1] + 1) // self.strides[1]
+        out_height = (in_shape[1] - (self.filter_shape[0]-1)) // self.strides[0]
+        out_width = (in_shape[2] - (self.filter_shape[1]-1)) // self.strides[1]
         out_shape = (in_shape[0], out_height, out_width, self.n_filters)
-        transposed_filters_shape = (filters_shape[3], filters_shape[1], filters_shape[2], filters_shape[0])
         self.out_buffer = np.empty(out_shape, dtype=dtype)
-        self.in_buffer = np.empty(transposed_filters_shape, dtype=dtype)
+        self.in_buffer = np.empty(self.filters.shape, dtype=dtype)
 
     def _forward(self, X):
         if X.ndim == 3:
@@ -153,28 +152,31 @@ class Convolutional2D(Layer):
         if self.filters is None:
             self.init_weights(X.dtype, X.shape)
         # TODO: apply convolution with numpy or cython ?
-        output = conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias)
-        print(X.shape, self.filters.shape, self.out_buffer.shape)
+        if X.shape[0] == self.out_buffer.shape[0]:
+            buffer = self.out_buffer
+        else:
+            buffer = np.empty([X.shape[0]] + list(self.out_buffer.shape)[1:])
+        output = conv_2d_forward(buffer, X, self.filters, self.biases, self.strides, self.with_bias)
         return output
-    
+
     def _backward(self, error, extra_info):
         db = np.sum(error, axis=(0, 1, 2))  # sum on 3 first dimensions to only keep the 4th (i.e. n_filters)
         if self.current_input.ndim == 3:
-            a = self.current_input[..., np.newaxis].transpose((3, 1, 2, 0))
+            a = self.current_input[..., np.newaxis]
         else:
-            a = self.current_input.transpose((3, 1, 2, 0))
-        b = error.transpose((3, 1, 2, 0))
-        print(a.shape, b.shape, self.in_buffer.shape)
-        dW = conv_2d_forward(self.in_buffer, a, b, self.biases, self.strides, add_bias=False).transpose((3, 1, 2, 0))
+            a = self.current_input
+        dW = conv_2d_backward_weights(self.in_buffer, a, error, self.strides)
+        dW /= error.shape[0]
         if extra_info['l2_reg'] > 0:
-            dW += extra_info['l2_reg'] * self.filters # Derivative of L2 regularization term
+            dW += extra_info['l2_reg'] * self.filters  # Derivative of L2 regularization term
         #ret = conv_2d_backward(error, self.filters, self.strides) ## uncomment to compute error to propagate
         ret = None
         self.update(dW, db, extra_info['optimizer'])
         return ret
 
     def update(self, dW, db, optimizer):
-        learning_rate = optimizer.learning_rate
+        #learning_rate = optimizer.learning_rate
+        learning_rate = 0.001
         self.filters -= learning_rate * dW
         if self.with_bias:
             self.biases -= learning_rate * db
@@ -190,24 +192,24 @@ class Dropout(Layer):
         self.keep_proba = keep_proba
         self.active = False
         self.mask = None
-    
+
     def activate(self):
         self.active = True
-    
+
     def deactivate(self):
         self.active = False
-    
+
     def _forward(self, X):
         if self.active:
             self.mask = (np.random.rand(*X.shape) > (1. - self.keep_proba))
             return self.mask * X
         else:
             return X
-    
+
     def _backward(self, error, extra_info={}):
         assert(self.active)
         return self.mask * error
-    
+
     def get_parameters(self):
         return None
 
@@ -218,11 +220,11 @@ class Flatten(Layer):
         Layer.__init__(self, copy=copy)
         self.order = order
         self.in_shape = None
-    
+
     def _forward(self, X):
         self.in_shape = X.shape
         return X.reshape((X.shape[0], -1), order=self.order)
-    
+
     def _backward(self, error, extra_info={}):
         return error.reshape(self.in_shape, order=self.order)
 
@@ -236,13 +238,13 @@ class GaussianNoise(Layer):
         Layer.__init__(self, copy=copy)
         self.stdv = stdv
         self.clip = clip
-    
+
     def _forward(self, X):
         noised_X = X + np.random.normal(0, self.stdv)
         if self.clip:
             noised_X = np.clip(noised_X, self.clip[0], self.clip[1])
         return noised_X
-    
+
     def _backward(self, error, extra_info={}):
         return error
 
@@ -256,12 +258,12 @@ class Lambda(Layer):
         Layer.__init__(self, copy=copy)
         self.forward_op = forward_op
         self.backward_op = backward_op
-    
+
     def _forward(self, X):
         return self.forward_op(X)
-    
+
     def _backward(self, error, extra_info={}):
         return self.backward_op(error)
-    
+
     def get_parameters(self):
         return None
