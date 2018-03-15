@@ -10,6 +10,7 @@
 from bgd.layers import Activation, FullyConnected, Dropout
 from bgd.errors import MSE, CrossEntropy
 from bgd.optimizers import MomentumOptimizer, Optimizer
+from bgd.utils import log
 
 import copy
 
@@ -113,16 +114,16 @@ class NeuralStack:
                             assert(len(val_probs) == len(y_val))
                             val_accuracy = ((val_probs.argmax(axis=1) == y_val).sum() / len(y_val)) * 100
                         else:
-                            val_accuracy = '-'
-                        print('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation accuracy: {3:.1f}'.format(
+                            val_accuracy = -1
+                        log('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation accuracy: {3:.1f}'.format(
                             epoch, str(batch_id) + ')', loss, val_accuracy))
                     else:
                         if validation_fraction > 0:
                             val_preds = self.eval(X_val)
                             val_mse = error_op.eval(batch_y, predictions)
                         else:
-                            val_accuracy = '-'
-                        print('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation MSE: {3: <15}'.format(
+                            val_accuracy = -1
+                        log('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation MSE: {3: <15}'.format(
                             epoch, str(batch_id) + ')', loss, val_mse))
 
         # Deactivate dropout

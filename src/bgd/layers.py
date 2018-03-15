@@ -8,10 +8,9 @@ from bgd.operators import *
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
-
 class Layer(metaclass=ABCMeta):
 
-    def __init__(self, copy=True):
+    def __init__(self, copy=False):
         self.copy = copy
         self.current_input = None
         self.current_output = None
@@ -71,7 +70,6 @@ class FullyConnected(Layer):
     def update(self, dW, db, optimizer):
         self.weights -= optimizer.update(dW)
         if self.with_bias:
-            # TODO: Apply optimization on biases as well
             self.biases -= optimizer.learning_rate * db
 
     def get_parameters(self):
@@ -173,8 +171,7 @@ class Convolutional2D(Layer):
         return ret
 
     def update(self, dW, db, optimizer):
-        #learning_rate = optimizer.learning_rate
-        learning_rate = 0.001
+        learning_rate = optimizer.learning_rate
         self.filters -= learning_rate * dW
         if self.with_bias:
             self.biases -= learning_rate * db
@@ -202,11 +199,11 @@ class MaxPooling2D(Layer):
             self.mask = np.empty(X.shape, dtype=np.int8)
         max_pooling_2d_forward(self.out_buffer, self.mask, X, self.pool_shape, self.strides)
         return self.out_buffer[:X.shape[0], :, :, :]
-    
+
     def _backward(self, error, extra_info={}):
         max_pooling_2d_backward(self.in_buffer, error, self.mask, self.pool_shape, self.strides)
         return self.in_buffer[:error.shape[0], :, :, :]
-    
+
     def get_parameters(self):
         return None
 
