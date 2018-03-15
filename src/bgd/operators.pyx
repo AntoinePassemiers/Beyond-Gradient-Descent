@@ -91,20 +91,20 @@ def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:
 
 
 def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] b, object strides, bint add_bias):
-    cdef unsigned int a, c, f, i, j, k, l
+    cdef int a, c, f, i, j, k, l
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
-    cdef unsigned int n_instances = X.shape[0]
-    cdef unsigned int height = X.shape[1]
-    cdef unsigned int width = X.shape[2]
-    cdef unsigned int n_channels = X.shape[3]
-    cdef unsigned int n_filters = filters.shape[0]
-    cdef unsigned int filter_height = filters.shape[1]
-    cdef unsigned int filter_width = filters.shape[2]
-    cdef unsigned int out_height = output.shape[1]
-    cdef unsigned int out_width = output.shape[2]
+    cdef int n_instances = X.shape[0]
+    cdef int height = X.shape[1]
+    cdef int width = X.shape[2]
+    cdef int n_channels = X.shape[3]
+    cdef int n_filters = filters.shape[0]
+    cdef int filter_height = filters.shape[1]
+    cdef int filter_width = filters.shape[2]
+    cdef int out_height = output.shape[1]
+    cdef int out_width = output.shape[2]
     np.asarray(output)[:, :, :, :] = 0
-    with nogil:
-        for a in range(n_instances):
+    with nogil, parallel():
+        for a in prange(n_instances):
             for i in range(out_height):
                 for j in range(out_width):
                     for c in range(n_channels):
@@ -143,7 +143,7 @@ def max_pooling_2d_forward(data_t[:, :, :, :] output, cnp.int8_t[:, :, :, :] mas
                                 if el > max_el:
                                     max_el, best_k, best_l = el, k, l
                         output[a, i, j, c] = max_el
-                        mask[a, i*stride_h+k, j*stride_w+l, c] = 1
+                        mask[a, i*stride_h+best_k, j*stride_w+best_l, c] = 1
 
 
 def max_pooling_2d_backward(data_t[:, :, :, :] output, data_t[:, :, :, :] error, cnp.int8_t[:, :, :, :] mask, object pool_shape, object strides):
@@ -157,7 +157,7 @@ def max_pooling_2d_backward(data_t[:, :, :, :] output, data_t[:, :, :, :] error,
     cdef int pool_width = pool_shape[1]
     cdef int out_height = error.shape[1]
     cdef int out_width = error.shape[2]
-    cdef int a, c, i, j, k, l, best_k, best_l
+    cdef int a, c, i, j, k, l
     np.asarray(output)[:, :, :, :] = 0
     with nogil, parallel():
         for a in prange(n_instances):
