@@ -52,18 +52,15 @@ def conv_2d_backward(data_t[:, :, :, :] output, data_t[:, :, :, :] delta, data_t
         for instance in prange(n_instances):
             for i in range(out_height):
                 for j in range(out_width):
-                    # from here, index twisting should be continued in order to avoid looping for nothing
-                    h_0 = 0 if i <= filter_height else i-filter_height-1
+                    h_0 = 0 if i < filter_height else i-filter_height+1
                     for h in range(h_0, min(height, i+1)):
-                        # And this, here, is some pretty nasty non-twisting aftermath (after math, get it? I am lonely)
-                        if 0 <= i-h < filter_height:
-                            w_0 = 0 if j <= filter_width else j-filter_width-1
+                        if 0 <= i-c_strides[0]*h < filter_height:
+                            w_0 = 0 if j < filter_width else j-filter_width+1
                             for w in range(w_0, min(width, j+1)):
-                                if 0 <= j-w < filter_width:
-                                    for c in range(n_channels):
-                                        for f in range(n_filters):
-                                            output[instance, i, j, f] += delta[instance, h, w, c] * filters[c, i-h, j-w, f]
-
+                                if 0 <= j-c_strides[1]*w < filter_width:
+                                    for f in prange(n_filters):
+                                        for c in prange(n_channels):
+                                            output[instance, i, j, f] += delta[instance, h, w, c] * filters[c, i-c_strides[0]*h, j-c_strides[1]*w, f]
 
 def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:,:,:,:] epsilon, object strides):
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
@@ -77,17 +74,14 @@ def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:
     cdef int f, i, j, c, inst, k, l
     with nogil, parallel():
         for f in prange(n_filters):
-            for i in range(out_height):
-                for j in range(out_width):
-                    for c in range(n_channels):
-                        # beta_0
-                        for inst in range(n_instances):
-                            # beta_1
+            for inst in prange(n_instances):
+                for c in prange(n_channels):
+                    for i in range(out_height):
+                        for j in range(out_width):
                             for k in range(eps_height):
-                                # beta_2
                                 for l in range(eps_width):
-                                    output[f, i, j, c] += epsilon[inst, k, l, f] * X[inst, k*c_strides[0] + i, l*c_strides[1] + j, c]
-    return np.asarray(output)
+                                   output[f, i, j, c] += epsilon[inst, k, l, f] * X[inst, k*c_strides[0] + i, l*c_strides[1] + j, c]
+    #return np.asarray(output)
 
 
 def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] b, object strides, bint add_bias):
@@ -105,10 +99,10 @@ def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :
     np.asarray(output)[:, :, :, :] = 0
     with nogil, parallel():
         for a in prange(n_instances):
-            for i in range(out_height):
-                for j in range(out_width):
-                    for c in range(n_channels):
-                        for f in range(n_filters):
+            for c in prange(n_channels):
+                for f in prange(n_filters):
+                    for i in range(out_height):
+                        for j in range(out_width):
                             for k in range(filter_height):
                                 for l in range(filter_width):
                                     output[a, i, j, f] += filters[f, k, l, c] * X[a, k+i*c_strides[0], l+j*c_strides[1], c]
