@@ -34,9 +34,6 @@ def bfgs(X, A, f):
 
 
 def l_bfgs(X, A, f, m=2):
-    n_variables = len(A)
-    B = scipy.sparse.lil_matrix((n_variables, n_variables), dtype=A.dtype)
-
     old_grad = None
     w = 10
     ss, ys = list(), list()
