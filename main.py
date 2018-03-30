@@ -29,20 +29,23 @@ if __name__ == '__main__':
         y = np.reshape(mnist.target, (mnist.target.shape[0]))
         X = X.reshape((X.shape[0], 28, 28, 1))  # New shape: (None, 28, 28, 1)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-        batch_size = 128
+        batch_size = 256
 
         optimizer = AdamOptimizer(learning_rate=.005)
 
         nn = NeuralStack()
-        nn.add(Convolutional2D([3, 3, 1], 32))
+        nn.add(Convolutional2D([5, 5, 1], 32))
         nn.add(Activation('relu'))
-        nn.add(MaxPooling2D([2, 2], [2, 2]))
+        nn.add(MaxPooling2D([2, 2], strides=[2, 2]))
+        nn.add(Convolutional2D([5, 5, 32], 32))
+        nn.add(Activation('relu'))
+        nn.add(MaxPooling2D([2, 2], strides=[2, 2]))
         nn.add(Dropout(.75))
         nn.add(Flatten())
-        nn.add(FullyConnected(4608, 128))
+        nn.add(FullyConnected(288, 64))
         nn.add(Activation('relu'))
         nn.add(Dropout(.5))
-        nn.add(FullyConnected(128, 10))
+        nn.add(FullyConnected(64, 10))
         nn.add(Activation('softmax'))
 
     elif dataset == 'digits':
@@ -67,8 +70,8 @@ if __name__ == '__main__':
         nn.add(FullyConnected(200, 10))
         nn.add(Activation('softmax'))
 
-    
-    nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size, epochs=1000, print_every=1, validation_fraction=0.1, alpha=.001)
+
+    nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size, epochs=1000, print_every=5*batch_size, validation_fraction=0.0, alpha=.001)
 
     '''# digits
     nn = NeuralStack()
