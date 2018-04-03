@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import os, sys
-from distutils.extension import Extension
+import os
 
 import numpy as np
 from numpy.distutils.misc_util import Configuration
@@ -13,7 +12,6 @@ sub_packages = [
 ]
 source_files = [
     (["operators.c"], "operators"),
-    (["nn.c"], "nn")
 ]
 
 extra_compile_args = list() # TODO

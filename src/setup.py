@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import os, sys, subprocess
-from distutils.core import setup
+import os, sys
 from distutils.extension import Extension
 
 import numpy as np
 from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup as np_setup
-from numpy.distutils.numpy_distribution import NumpyDistribution
 
 try:
     from Cython.Build import cythonize
@@ -19,7 +17,6 @@ except ImportError:
 source_folder = "bgd"
 source_files = [
     "operators.pyx",
-    "nn.pyx",
 ]
 
 def configuration(parent_package = str(), top_path = None):

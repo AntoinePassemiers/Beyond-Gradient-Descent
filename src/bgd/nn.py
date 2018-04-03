@@ -7,7 +7,7 @@
 # cython: nonecheck=False
 # cython: overflowcheck=False
 
-from bgd.layers import Activation, FullyConnected, Dropout
+from bgd.layers import Dropout
 from bgd.errors import MSE, CrossEntropy
 from bgd.optimizers import MomentumOptimizer, Optimizer
 from bgd.utils import log
@@ -15,8 +15,8 @@ from bgd.utils import log
 import copy
 
 import numpy as np
-cimport numpy as cnp
-cnp.import_array()
+#cimport numpy as cnp
+#cnp.import_array()
 
 
 class NeuralStack:

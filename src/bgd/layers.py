@@ -2,7 +2,7 @@
 # layers.py
 # author : Antoine Passemiers, Robin Petit
 
-from bgd.initializers import *
+from bgd.initializers import GaussianInitializer
 from bgd.operators import *
 
 from abc import ABCMeta, abstractmethod

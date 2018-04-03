@@ -75,13 +75,12 @@ def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:
     with nogil, parallel():
         for f in prange(n_filters):
             for inst in prange(n_instances):
-                for c in prange(n_channels):
-                    for i in range(out_height):
-                        for j in range(out_width):
-                            for k in range(eps_height):
-                                for l in range(eps_width):
+                for i in range(out_height):
+                    for j in range(out_width):
+                        for k in range(eps_height):
+                            for l in range(eps_width):
+                                for c in prange(n_channels):
                                    output[f, i, j, c] += epsilon[inst, k, l, f] * X[inst, k*c_strides[0] + i, l*c_strides[1] + j, c]
-    #return np.asarray(output)
 
 
 def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] b, object strides, bint add_bias):
