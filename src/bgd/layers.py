@@ -11,13 +11,15 @@ import numpy as np
 
 class Layer(metaclass=ABCMeta):
 
-    def __init__(self, copy=False):
+    def __init__(self, copy=False, save_input=True, save_output=True):
         self.copy = copy
         self.current_input = None
         self.current_output = None
         self.optimizer = None
         self.with_bias = False
-        
+        self.save_output = save_output
+        self.save_input = save_input
+
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer
         if self.with_bias:
@@ -36,12 +38,14 @@ class Layer(metaclass=ABCMeta):
         pass
 
     def forward(self, X):
-        self.current_input = X
-        self.current_output = self._forward(X)
-        if self.copy:
-            if np.may_share_memory(X, self.current_output, np.core.multiarray.MAY_SHARE_BOUNDS):
-                self.current_output = np.copy(self.current_output)
-        return self.current_output
+        if self.save_input:
+            self.current_input = X
+        current_output = self._forward(X)
+        if self.save_output:
+            self.current_output = current_output
+            if self.copy and np.may_share_memory(X, current_output, np.core.multiarray.MAY_SHARE_BOUNDS):
+                self.current_output = np.copy(current_output)
+        return current_output
 
     def backward(self, *args, **kwargs):
         return self._backward(*args, **kwargs)
@@ -50,7 +54,7 @@ class Layer(metaclass=ABCMeta):
 class FullyConnected(Layer):
 
     def __init__(self, n_in, n_out, copy=True, with_bias=True, dtype=np.double, initializer=GaussianInitializer(0, .01)):
-        Layer.__init__(self, copy=copy)
+        Layer.__init__(self, copy=copy, save_output=False)
         self.with_bias = with_bias
         self.dtype = dtype
         self.n_in = n_in
@@ -66,11 +70,10 @@ class FullyConnected(Layer):
         return np.dot(X, self.weights) + self.biases
 
     def _backward(self, error, extra_info={}):
-        batch_size = len(error)
-        gradient_weights = np.dot(self.current_input.T, error) / batch_size
+        gradient_weights = np.dot(self.current_input.T, error)
         if extra_info['l2_reg'] > 0:
             gradient_weights += extra_info['l2_reg'] * self.weights # Derivative of L2 regularization term
-        gradient_bias = np.sum(error, axis=0, keepdims=True) / batch_size
+        gradient_bias = np.sum(error, axis=0, keepdims=True)
         ret = np.dot(error, self.weights.T)
         self.update(gradient_weights, gradient_bias)
         return ret
@@ -99,7 +102,7 @@ class Activation(Layer):
         elif self.function == 'relu':
             out = np.maximum(X, 0)
         elif self.function == 'softmax':
-            e = np.exp(X)
+            e = np.nan_to_num(np.exp(X))
             out = e / np.sum(e, axis=1, keepdims=True)
         else:
             raise NotImplementedError()
@@ -127,9 +130,8 @@ class Activation(Layer):
 
 
 class Convolutional2D(Layer):
-
     def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True, copy=True, initializer=GaussianInitializer(0, .02)):
-        Layer.__init__(self, copy=copy)
+        Layer.__init__(self, copy=copy, save_output=False)
         self.filter_shape = filter_shape  # [height, width, n_channels]
         self.strides = strides
         self.initializer = initializer
@@ -144,7 +146,7 @@ class Convolutional2D(Layer):
     def init_weights(self, dtype, in_shape):
         filters_shape = tuple([self.n_filters] + list(self.filter_shape))
         self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
-        self.biases = self.initializer.initialize(self.n_filters, dtype=dtype)  
+        self.biases = self.initializer.initialize(self.n_filters, dtype=dtype)
 
         out_height = (in_shape[1] - (self.filter_shape[0]-1)) // self.strides[0]
         out_width = (in_shape[2] - (self.filter_shape[1]-1)) // self.strides[1]
@@ -161,22 +163,21 @@ class Convolutional2D(Layer):
         if X.shape[0] > self.out_buffer.shape[0]:
             self.out_buffer = np.empty([X.shape[0]] + list(self.out_buffer.shape)[1:])
         conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias)
+        self.n_instances = X.shape[0]
         return self.out_buffer[:X.shape[0], :, :, :]
 
     def _backward(self, error, extra_info):
         db = np.sum(error, axis=(0, 1, 2))  # sum on 3 first dimensions to only keep the 4th (i.e. n_filters)
-        db /= error.shape[0]
         if self.current_input.ndim == 3:
             a = self.current_input[..., np.newaxis]
         else:
             a = self.current_input
         conv_2d_backward_weights(self.in_buffer, a, error, self.strides)
-        self.in_buffer /= error.shape[0]
         if extra_info['l2_reg'] > 0:
             self.in_buffer += extra_info['l2_reg'] * self.filters  # Derivative of L2 regularization term
-        conv_2d_backward(self.error_buffer, error, self.filters, self.strides)  ## uncomment to compute error to propagate
+        conv_2d_backward(self.error_buffer[:self.n_instances], error, self.filters, self.strides)  ## uncomment to compute error to propagate
         self.update(self.in_buffer, db)
-        return self.error_buffer
+        return self.error_buffer[:self.n_instances, :, :, :]
 
     def update(self, dW, db):
         dW = self.optimizer.update(dW)
@@ -191,7 +192,7 @@ class Convolutional2D(Layer):
 class MaxPooling2D(Layer):
 
     def __init__(self, pool_shape, strides=[1, 1], copy=True):
-        Layer.__init__(self, copy=copy)
+        Layer.__init__(self, copy=copy, save_input=False, save_output=False)
         self.pool_shape = pool_shape
         self.strides = strides
         self.mask = None
@@ -219,7 +220,7 @@ class MaxPooling2D(Layer):
 class Dropout(Layer):
 
     def __init__(self, keep_proba=.5, copy=True):
-        Layer.__init__(self, copy=copy)
+        Layer.__init__(self, copy=copy, save_input=False, save_output=False)
         self.keep_proba = keep_proba
         self.active = False
         self.mask = None
@@ -248,7 +249,7 @@ class Dropout(Layer):
 class Flatten(Layer):
 
     def __init__(self, order='C', copy=True):
-        Layer.__init__(self, copy=copy)
+        Layer.__init__(self, copy=copy, save_input=False, save_output=False)
         self.order = order
         self.in_shape = None
 
