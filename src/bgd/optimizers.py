@@ -38,7 +38,7 @@ class MomentumOptimizer(Optimizer):
 
 class AdamOptimizer(Optimizer):
 
-    def __init__(self, learning_rate=.001, beta_1=.9, beta_2=.999, epsilon=1e-08):
+    def __init__(self, learning_rate=.001, beta_1=.9, beta_2=.999, epsilon=1e-8):
         """
         References
         ----------
@@ -46,7 +46,7 @@ class AdamOptimizer(Optimizer):
         Diederik P. Kingma and Jimmy Lei Ba
         https://arxiv.org/pdf/1412.6980.pdf
         """
-        assert((0 < beta_1 < 1) and (0 < beta_2 < 1))
+        assert((0 <= beta_1 < 1) and (0 <= beta_2 < 1))
         self.learning_rate = learning_rate
         self.beta_1 = beta_1
         self.beta_2 = beta_2
@@ -61,4 +61,4 @@ class AdamOptimizer(Optimizer):
         self.moment_2 = self.beta_2 * self.moment_2 + (1. - self.beta_2) * grad ** 2
         m_hat = self.moment_1 / (1. - self.beta_1 ** self.step)
         v_hat = self.moment_2 / (1. - self.beta_2 ** self.step)
-        return self.learning_rate * (m_hat / (np.sqrt(v_hat) - self.epsilon))
+        return self.learning_rate * (m_hat / (np.sqrt(v_hat) + self.epsilon))
