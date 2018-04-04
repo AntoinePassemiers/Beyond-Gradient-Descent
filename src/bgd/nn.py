@@ -15,8 +15,6 @@ from bgd.utils import log
 import copy
 
 import numpy as np
-#cimport numpy as cnp
-#cnp.import_array()
 
 
 class NeuralStack:
@@ -49,7 +47,8 @@ class NeuralStack:
         X, y = X[indices], np.squeeze(y[indices])
         return X[:split], y[:split], X[split:], y[split:]
 
-    def train(self, X, y, epochs=1000, optimizer='default', error_op='cross-entropy', batch_size=200, alpha=.0001, print_every=50, validation_fraction=0.1):
+    def train(self, X, y, epochs=1000, optimizer='default', error_op='cross-entropy',
+              batch_size=200, alpha=.0001, print_every=50, validation_fraction=0.1):
         batch_size = min(len(X), batch_size)
         error_op = CrossEntropy() if error_op.lower() == 'cross-entropy' else MSE()
         errors = list()
@@ -75,9 +74,8 @@ class NeuralStack:
                 layer.activate()
 
         # Create one independent optimizer per layer
-        optimizers = list()
         for layer in self.layers:
-            optimizers.append(copy.deepcopy(optimizer))
+            layer.set_optimizer(copy.deepcopy(optimizer))
 
         seen_instances = 0
         for epoch in range(epochs):
@@ -94,14 +92,14 @@ class NeuralStack:
                         params = layer.get_parameters()
                         if params:
                             loss += 0.5 * alpha * np.sum(params[0] ** 2)
-                # errors.append(loss)
+                errors.append(loss)
 
                 # Compute gradient of the loss function
                 error = error_op.grad(batch_y, predictions)
 
                 # Propagate error through each layer
-                for layer, optimizer in zip(reversed(self.layers), reversed(optimizers)):
-                    extra_info = {'optimizer': optimizer, 'l2_reg': alpha}
+                for layer in reversed(self.layers):
+                    extra_info = {'l2_reg': alpha}
                     error = layer.backward(error, extra_info)
 
                 seen_instances += batch_size
@@ -120,7 +118,7 @@ class NeuralStack:
                     else:
                         if validation_fraction > 0:
                             val_preds = self.eval(X_val)
-                            val_mse = error_op.eval(batch_y, predictions)
+                            val_mse = error_op.eval(batch_y, val_preds)
                         else:
                             val_accuracy = -1
                         log('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation MSE: {3: <15}'.format(

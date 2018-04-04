@@ -5,6 +5,7 @@
 from bgd.initializers import GaussianInitializer
 from bgd.operators import *
 
+import copy
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
@@ -14,6 +15,13 @@ class Layer(metaclass=ABCMeta):
         self.copy = copy
         self.current_input = None
         self.current_output = None
+        self.optimizer = None
+        self.with_bias = False
+        
+    def set_optimizer(self, optimizer):
+        self.optimizer = optimizer
+        if self.with_bias:
+            self.bias_optimizer = copy.deepcopy(optimizer)
 
     @abstractmethod
     def get_parameters(self):
@@ -64,13 +72,13 @@ class FullyConnected(Layer):
             gradient_weights += extra_info['l2_reg'] * self.weights # Derivative of L2 regularization term
         gradient_bias = np.sum(error, axis=0, keepdims=True) / batch_size
         ret = np.dot(error, self.weights.T)
-        self.update(gradient_weights, gradient_bias, extra_info['optimizer'])
+        self.update(gradient_weights, gradient_bias)
         return ret
 
-    def update(self, dW, db, optimizer):
-        self.weights -= optimizer.update(dW)
+    def update(self, dW, db):
+        self.weights -= self.optimizer.update(dW)
         if self.with_bias:
-            self.biases -= optimizer.learning_rate * db
+            self.biases -= self.bias_optimizer.update(db)
 
     def get_parameters(self):
         return (self.weights, self.biases) if self.with_bias else (self.weights,)
@@ -136,21 +144,20 @@ class Convolutional2D(Layer):
     def init_weights(self, dtype, in_shape):
         filters_shape = tuple([self.n_filters] + list(self.filter_shape))
         self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
-        self.biases = self.initializer.initialize(self.n_filters, dtype=dtype)  #np.zeros(self.n_filters, dtype=dtype)
+        self.biases = self.initializer.initialize(self.n_filters, dtype=dtype)  
 
         out_height = (in_shape[1] - (self.filter_shape[0]-1)) // self.strides[0]
         out_width = (in_shape[2] - (self.filter_shape[1]-1)) // self.strides[1]
         out_shape = (in_shape[0], out_height, out_width, self.n_filters)
-        self.out_buffer = np.empty(out_shape, dtype=dtype)
-        self.in_buffer = np.empty(self.filters.shape, dtype=dtype)
-        self.error_buffer = np.empty(in_shape, dtype=dtype)
+        self.out_buffer = np.zeros(out_shape, dtype=dtype)
+        self.in_buffer = np.zeros(self.filters.shape, dtype=dtype)
+        self.error_buffer = np.zeros(in_shape, dtype=dtype)
 
     def _forward(self, X):
         if X.ndim == 3:
             X = X[..., np.newaxis]
         if self.filters is None:
             self.init_weights(X.dtype, X.shape)
-        # TODO: apply convolution with numpy or cython ?
         if X.shape[0] > self.out_buffer.shape[0]:
             self.out_buffer = np.empty([X.shape[0]] + list(self.out_buffer.shape)[1:])
         conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias)
@@ -168,13 +175,14 @@ class Convolutional2D(Layer):
         if extra_info['l2_reg'] > 0:
             self.in_buffer += extra_info['l2_reg'] * self.filters  # Derivative of L2 regularization term
         conv_2d_backward(self.error_buffer, error, self.filters, self.strides)  ## uncomment to compute error to propagate
-        self.update(self.in_buffer, db, extra_info['optimizer'])
+        self.update(self.in_buffer, db)
         return self.error_buffer
 
-    def update(self, dW, db, optimizer):
-        self.filters -= optimizer.update(dW)
+    def update(self, dW, db):
+        dW = self.optimizer.update(dW)
+        self.filters -= dW
         if self.with_bias:
-            self.biases -= optimizer.learning_rate * db
+            self.biases -= self.bias_optimizer.update(db)
 
     def get_parameters(self):
         return (self.filters, self.biases) if self.with_bias else (self.filters,)
