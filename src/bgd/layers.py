@@ -53,7 +53,7 @@ class Layer(metaclass=ABCMeta):
 
 class FullyConnected(Layer):
 
-    def __init__(self, n_in, n_out, copy=True, with_bias=True, dtype=np.double, initializer=GaussianInitializer(0, .01)):
+    def __init__(self, n_in, n_out, copy=False, with_bias=True, dtype=np.double, initializer=GaussianInitializer(0, .01)):
         Layer.__init__(self, copy=copy, save_output=False)
         self.with_bias = with_bias
         self.dtype = dtype
@@ -89,7 +89,7 @@ class FullyConnected(Layer):
 
 class Activation(Layer):
 
-    def __init__(self, function='sigmoid', copy=True):
+    def __init__(self, function='sigmoid', copy=False):
         Layer.__init__(self, copy=copy)
         self.function = function.lower()
         self.copy = copy
@@ -130,7 +130,7 @@ class Activation(Layer):
 
 
 class Convolutional2D(Layer):
-    def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True, copy=True, initializer=GaussianInitializer(0, .02)):
+    def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True, copy=False, initializer=GaussianInitializer(0, .02)):
         Layer.__init__(self, copy=copy, save_output=False)
         self.filter_shape = filter_shape  # [height, width, n_channels]
         self.strides = strides
@@ -191,7 +191,7 @@ class Convolutional2D(Layer):
 
 class MaxPooling2D(Layer):
 
-    def __init__(self, pool_shape, strides=[1, 1], copy=True):
+    def __init__(self, pool_shape, strides=[1, 1], copy=False):
         Layer.__init__(self, copy=copy, save_input=False, save_output=False)
         self.pool_shape = pool_shape
         self.strides = strides
@@ -219,7 +219,7 @@ class MaxPooling2D(Layer):
 
 class Dropout(Layer):
 
-    def __init__(self, keep_proba=.5, copy=True):
+    def __init__(self, keep_proba=.5, copy=False):
         Layer.__init__(self, copy=copy, save_input=False, save_output=False)
         self.keep_proba = keep_proba
         self.active = False
@@ -248,7 +248,7 @@ class Dropout(Layer):
 
 class Flatten(Layer):
 
-    def __init__(self, order='C', copy=True):
+    def __init__(self, order='C', copy=False):
         Layer.__init__(self, copy=copy, save_input=False, save_output=False)
         self.order = order
         self.in_shape = None
@@ -266,7 +266,7 @@ class Flatten(Layer):
 
 class GaussianNoise(Layer):
 
-    def __init__(self, stdv, clip=(0, 1), copy=True):
+    def __init__(self, stdv, clip=(0, 1), copy=False):
         Layer.__init__(self, copy=copy)
         self.stdv = stdv
         self.clip = clip
@@ -286,7 +286,7 @@ class GaussianNoise(Layer):
 
 class Lambda(Layer):
 
-    def __init__(self, forward_op, backward_op, copy=True):
+    def __init__(self, forward_op, backward_op, copy=False):
         Layer.__init__(self, copy=copy)
         self.forward_op = forward_op
         self.backward_op = backward_op
