@@ -110,8 +110,6 @@ def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :
                                     output[a, i, j, f] += filters[f, k, l, c] * X[a, k+i*c_strides[0], l+j*c_strides[1], c]
                         if add_bias:
                             output[a, i, j, f] += b[f]  # Add intercept
-    return np.asarray(output)[:n_instances, :out_height, :out_width, :n_filters]
-
 
 def max_pooling_2d_forward(data_t[:, :, :, :] output, cnp.int8_t[:, :, :, :] mask, data_t[:, :, :, :] X, object pool_shape, object strides):
     cdef int n_instances = X.shape[0]

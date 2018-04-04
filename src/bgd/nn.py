@@ -47,9 +47,19 @@ class NeuralStack:
         X, y = X[indices], np.squeeze(y[indices])
         return X[:split], y[:split], X[split:], y[split:]
 
+    def get_accuracy(self, X_val, y_val, batch_size=256):
+        nb_correct = 0
+        for i in np.arange(0, X_val.shape[0], batch_size):
+            indices = i + np.arange(min(batch_size, X_val.shape[0]-i))
+            val_probs = self.eval(X_val[indices])
+            assert len(val_probs) == len(indices)
+            nb_correct += (val_probs.argmax(axis=1) == y_val[indices]).sum()
+        return 100 * nb_correct / X_val.shape[0]
+
     def train(self, X, y, epochs=1000, optimizer='default', error_op='cross-entropy',
               batch_size=200, alpha=.0001, print_every=50, validation_fraction=0.1):
         batch_size = min(len(X), batch_size)
+        alpha /= batch_size
         error_op = CrossEntropy() if error_op.lower() == 'cross-entropy' else MSE()
         errors = list()
 
@@ -108,9 +118,7 @@ class NeuralStack:
                     # Warning: This code section is ugly
                     if isinstance(error_op, CrossEntropy):
                         if validation_fraction > 0:
-                            val_probs = self.eval(X_val)
-                            assert(len(val_probs) == len(y_val))
-                            val_accuracy = ((val_probs.argmax(axis=1) == y_val).sum() / len(y_val)) * 100
+                            val_accuracy = self.get_accuracy(X_val, y_val)
                         else:
                             val_accuracy = -1
                         log('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation accuracy: {3:.1f}'.format(

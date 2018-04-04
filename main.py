@@ -6,6 +6,7 @@ from bgd.nn import NeuralStack
 from bgd.layers import FullyConnected, Activation, Flatten, Convolutional2D, MaxPooling2D, Dropout
 from bgd.initializers import GaussianInitializer, UniformInitializer
 from bgd.optimizers import MomentumOptimizer, AdamOptimizer
+from bgd.utils import log
 
 import numpy as np
 from sklearn.datasets import fetch_mldata, load_digits
@@ -13,38 +14,39 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix
 import matplotlib.pyplot as plt
+from random import seed
 
 np.seterr(all='raise', over='warn', under='warn')
 np.random.seed(0xCAFE)
+seed(0xCAFE)
 print('')
 
 dataset = 'mnist'
-
 
 if __name__ == '__main__':
     if dataset == 'mnist':
         mnist = fetch_mldata("MNIST original")
         X = mnist.data / 255
-        #X = np.asarray(mnist.data, dtype=np.float)
         y = np.reshape(mnist.target, (mnist.target.shape[0]))
-        X = X.reshape((X.shape[0], 28, 28, 1))  # New shape: (None, 28, 28, 1)
+        X = X.reshape((X.shape[0], 28, 28, 1))
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-        batch_size = 256
+        #X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=512)
+        batch_size = 512
 
         optimizer = AdamOptimizer(learning_rate=.005)
 
         nn = NeuralStack()
-        nn.add(Convolutional2D([5, 5, 1], 32))
+        nn.add(Convolutional2D([5, 5, 1], 32, strides=(2, 2)))
         nn.add(Activation('relu'))
-        nn.add(MaxPooling2D([2, 2], strides=[2, 2]))
-        nn.add(Convolutional2D([5, 5, 32], 32))
+        #nn.add(MaxPooling2D([2, 2], strides=[2, 2]))
+        nn.add(Convolutional2D([5, 5, 32], 32, strides=(2, 2)))
         nn.add(Activation('relu'))
-        nn.add(MaxPooling2D([2, 2], strides=[2, 2]))
-        nn.add(Dropout(.75))
+        #nn.add(MaxPooling2D([2, 2], strides=[2, 2]))
+        #nn.add(Dropout(.9))
         nn.add(Flatten())
-        nn.add(FullyConnected(288, 64))
-        nn.add(Activation('relu'))
-        nn.add(Dropout(.5))
+        #nn.add(FullyConnected(288, 64))
+        nn.add(FullyConnected(512, 64))
+        nn.add(Activation('sigmoid'))
         nn.add(FullyConnected(64, 10))
         nn.add(Activation('softmax'))
 
@@ -56,7 +58,8 @@ if __name__ == '__main__':
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
         batch_size = len(X_train)
 
-        optimizer = AdamOptimizer()
+        optimizer = AdamOptimizer(learning_rate=.001)
+
         nn = NeuralStack()
         nn.add(Convolutional2D([4, 4, 1], 32, strides=(1, 1)))
         nn.add(Activation('relu'))
@@ -66,12 +69,15 @@ if __name__ == '__main__':
         #nn.add(Activation('relu'))
         nn.add(Flatten())
         nn.add(FullyConnected(800, 200))
-        nn.add(Activation('sigmoid'))
+        nn.add(Activation('relu'))
         nn.add(FullyConnected(200, 10))
         nn.add(Activation('softmax'))
 
 
-    nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size, epochs=1000, print_every=5*batch_size, validation_fraction=0.0, alpha=.001)
+    errors = nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size,
+             epochs=10, print_every=1*batch_size, validation_fraction=0.0, alpha=.1)
+    accuracy_test = nn.get_accuracy(X_test, y_test, batch_size=1024)
+    log('Accuracy on test: {:.3f}%'.format(accuracy_test))
 
     '''# digits
     nn = NeuralStack()
@@ -80,7 +86,10 @@ if __name__ == '__main__':
     nn.add(Activation('relu'))
     nn.add(FullyConnected(1152, len(np.unique(y))))
     nn.add(Activation('softmax'))
-    nn.train(X, y, epochs=100, print_every=20000)'''
+    errors = nn.train(X, y, epochs=100, print_every=20000)'''
+
+    plt.plot(errors)
+    plt.show()
 
 def test_mnist_mlp():
     mnist = fetch_mldata("MNIST original")
