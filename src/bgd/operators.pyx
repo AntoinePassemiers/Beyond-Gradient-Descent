@@ -11,6 +11,8 @@ import numpy as np
 cimport numpy as cnp
 cnp.import_array()
 
+from libc.string cimport memset, memcpy
+
 import ctypes
 from cython.parallel import parallel, prange
 
@@ -110,6 +112,65 @@ def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :
                             for k in range(filter_height):
                                 for l in range(filter_width):
                                     output[a, i, j, f] += filters[f, k, l, c] * X[a, k+i*c_strides[0], l+j*c_strides[1], c]
+                        if add_bias:
+                            output[a, i, j, f] += b[f]  # Add intercept
+
+
+def conv_2d_forward_sse(cnp.float32_t[:, :, :, :] output,
+                        cnp.float32_t[:, :, :, :] X,
+                        cnp.float32_t[:, :, :, :] filters,
+                        cnp.float32_t[:] b,
+                        object strides,
+                        bint add_bias):
+
+    cdef int a, c, f, i, j, k, l
+    cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
+    cdef int n_instances = X.shape[0]
+    cdef int height = X.shape[1]
+    cdef int width = X.shape[2]
+    cdef int n_channels = X.shape[3]
+    cdef int n_filters = filters.shape[0]
+    cdef int filter_height = filters.shape[1]
+    cdef int filter_width = filters.shape[2]
+    cdef int out_height = output.shape[1]
+    cdef int out_width = output.shape[2]
+
+    cdef int rc, drc
+    cdef cnp.float32_t[8] buf
+    cdef __m128 _F
+    cdef __m128 _I
+    cdef __m128 _O
+
+    np.asarray(output)[:, :, :, :] = 0
+    with nogil:
+        for a in range(n_instances):
+            for f in range(n_filters):
+                for i in range(out_height):
+                    for j in range(out_width):
+                        for k in range(filter_height):
+                            for l in range(filter_width):
+                                rc = 0
+                                while rc < n_channels:
+
+                                    # Compute upper bound to avoid out-of-bound errors
+                                    drc = min(4, n_channels-rc)
+                                    memset(&buf[0], 0x00, 8)
+                                    memcpy(&buf[0], &filters[f, k, l, rc], 4*drc)
+                                    memcpy(&buf[4], &X[a, k+i*c_strides[0], l+j*c_strides[1], rc], 4*drc)
+                                    rc += drc
+
+                                    # Elemwise multiplication
+                                    _F = _mm_loadu_ps(&buf[0])
+                                    _I = _mm_loadu_ps(&buf[4])
+                                    _O = _mm_mul_ps(_F, _I)
+
+                                    # Sum content of _O and store result in buffer
+                                    _O = _mm_hadd_ps(_O, _O)
+                                    _O = _mm_hadd_ps(_O, _O)
+                                    _mm_store_ps(&buf[0], _O)
+
+                                    output[a, i, j, f] += buf[0]
+
                         if add_bias:
                             output[a, i, j, f] += b[f]  # Add intercept
 

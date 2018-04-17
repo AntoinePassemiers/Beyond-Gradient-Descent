@@ -156,24 +156,24 @@ class Convolutional2D(Layer):
         out_height = (in_shape[1] - (self.filter_shape[0]-1)) // self.strides[0]
         out_width = (in_shape[2] - (self.filter_shape[1]-1)) // self.strides[1]
         out_shape = (in_shape[0], out_height, out_width, self.n_filters)
-        self.out_buffer = np.zeros(out_shape)
-        self.in_buffer = np.zeros(self.filters.shape)
-        self.error_buffer = np.zeros(in_shape)
+        self.out_buffer = np.zeros(out_shape, dtype=dtype)
+        self.in_buffer = np.zeros(self.filters.shape, dtype=dtype)
+        self.error_buffer = np.zeros(in_shape, dtype=dtype)
 
     def _forward(self, X):
         if X.ndim == 3:
             X = X[..., np.newaxis]
         if self.filters is None:
-            self.init_weights(X.dtype, X.shape)
+            self.init_weights(np.float32, X.shape)
         if X.shape[0] > self.out_buffer.shape[0]:
             new_shape = tuple([X.shape[0]] + list(self.out_buffer.shape)[1:])
             self.out_buffer = np.empty(new_shape)
 
-        conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias, self.n_jobs)
+        conv_2d_forward(self.out_buffer, X.astype(np.float32), self.filters, self.biases, self.strides, self.with_bias, self.n_jobs)
         G = np.copy(self.out_buffer)
-        conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias, self.n_jobs)
+        conv_2d_forward_sse(self.out_buffer, X.astype(np.float32), self.filters, self.biases, self.strides, self.with_bias)
         G2 = np.copy(self.out_buffer)
-        print(np.isclose(G, G2, rtol=.01, atol=.01).sum(), G.size)
+        print("Forward - similarity between regular version and SSE version: %f" % (np.isclose(G, G2).sum() / float(G.size)))
         
         self.n_instances = X.shape[0]
         return self.out_buffer[:X.shape[0], :, :, :]
@@ -185,10 +185,10 @@ class Convolutional2D(Layer):
         else:
             a = self.current_input
 
-        conv_2d_backward_weights(self.in_buffer, a, error, self.strides, self.n_jobs)
+        conv_2d_backward_weights(self.in_buffer, a.astype(np.float32), error.astype(np.float32), self.strides, self.n_jobs)
         if extra_info['l2_reg'] > 0:
             self.in_buffer += extra_info['l2_reg'] * self.filters  # Derivative of L2 regularization term
-        conv_2d_backward(self.error_buffer[:self.n_instances], error, self.filters, self.strides, self.n_jobs)  ## uncomment to compute error to propagate
+        conv_2d_backward(self.error_buffer[:self.n_instances], error.astype(np.float32), self.filters, self.strides, self.n_jobs)  ## uncomment to compute error to propagate
         self.update(self.in_buffer, db)
         return self.error_buffer[:self.n_instances, :, :, :]
 
