@@ -11,6 +11,7 @@ import numpy as np
 cimport numpy as cnp
 cnp.import_array()
 
+import ctypes
 from cython.parallel import parallel, prange
 
 
@@ -28,7 +29,7 @@ cdef fused data_t:
 # TODO: add padding
 
 ### Needs to be debugged after weight update has been corrected
-def conv_2d_backward(data_t[:, :, :, :] output, data_t[:, :, :, :] epsilon, data_t[:, :, :, :] filters, object strides):
+def conv_2d_backward(data_t[:, :, :, :] output, data_t[:, :, :, :] epsilon, data_t[:, :, :, :] filters, object strides, int num_threads):
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
     cdef int n_instances = epsilon.shape[0]
     cdef int height = epsilon.shape[1]
@@ -41,7 +42,7 @@ def conv_2d_backward(data_t[:, :, :, :] output, data_t[:, :, :, :] epsilon, data
     cdef int out_width = (width + filter_width - 1) // c_strides[1]
     cdef int instance, i, j, f, h, w, c, alpha, beta, h_0, w_0
     np.asarray(output)[:, :, :, :] = 0
-    with nogil, parallel():
+    with nogil, parallel(num_threads=num_threads):
         # \alpha_0
         for instance in prange(n_instances):
             # \alpha_1
@@ -64,7 +65,8 @@ def conv_2d_backward(data_t[:, :, :, :] output, data_t[:, :, :, :] epsilon, data
                                         for c in prange(n_channels):
                                             output[instance, i, j, f] += epsilon[instance, h, w, c] * filters[c, i-c_strides[0]*h, j-c_strides[1]*w, f]
 
-def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:,:,:,:] epsilon, object strides):
+
+def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:,:,:,:] epsilon, object strides, int num_threads):
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
     cdef int n_filters = output.shape[0]
     cdef int out_height = output.shape[1]
@@ -75,7 +77,7 @@ def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:
     cdef int eps_width = epsilon.shape[2]
     cdef int f, i, j, c, inst, k, l
     np.asarray(output)[:, :, :, :] = 0
-    with nogil, parallel():
+    with nogil, parallel(num_threads=num_threads):
         for f in prange(n_filters):
             for inst in prange(n_instances):
                 for i in range(out_height):
@@ -86,7 +88,7 @@ def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:
                                     output[f, i, j, c] += epsilon[inst, k, l, f] * X[inst, k*c_strides[0] + i, l*c_strides[1] + j, c]
 
 
-def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] b, object strides, bint add_bias):
+def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] b, object strides, bint add_bias, int num_threads):
     cdef int a, c, f, i, j, k, l
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
     cdef int n_instances = X.shape[0]
@@ -99,7 +101,7 @@ def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :
     cdef int out_height = output.shape[1]
     cdef int out_width = output.shape[2]
     np.asarray(output)[:, :, :, :] = 0
-    with nogil, parallel():
+    with nogil, parallel(num_threads=num_threads):
         for a in prange(n_instances):
             for f in prange(n_filters):
                 for i in range(out_height):
@@ -110,6 +112,7 @@ def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :
                                     output[a, i, j, f] += filters[f, k, l, c] * X[a, k+i*c_strides[0], l+j*c_strides[1], c]
                         if add_bias:
                             output[a, i, j, f] += b[f]  # Add intercept
+
 
 def max_pooling_2d_forward(data_t[:, :, :, :] output, cnp.int8_t[:, :, :, :] mask, data_t[:, :, :, :] X, object pool_shape, object strides):
     cdef int n_instances = X.shape[0]

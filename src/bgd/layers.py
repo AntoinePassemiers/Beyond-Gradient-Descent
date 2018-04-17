@@ -12,6 +12,7 @@ import numpy as np
 class Layer(metaclass=ABCMeta):
 
     def __init__(self, copy=False, save_input=True, save_output=True):
+        self.input_shape = None
         self.copy = copy
         self.current_input = None
         self.current_output = None
@@ -38,6 +39,7 @@ class Layer(metaclass=ABCMeta):
         pass
 
     def forward(self, X):
+        self.input_shape = X.shape
         if self.save_input:
             self.current_input = X
         current_output = self._forward(X)
@@ -48,7 +50,9 @@ class Layer(metaclass=ABCMeta):
         return current_output
 
     def backward(self, *args, **kwargs):
-        return self._backward(*args, **kwargs)
+        out = self._backward(*args, **kwargs)
+        assert(out.shape == self.input_shape)
+        return out
 
 
 class FullyConnected(Layer):
@@ -130,7 +134,7 @@ class Activation(Layer):
 
 
 class Convolutional2D(Layer):
-    def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True, copy=False, initializer=GaussianInitializer(0, .02)):
+    def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True, copy=False, initializer=GaussianInitializer(0, .02), n_jobs=4):
         Layer.__init__(self, copy=copy, save_output=False)
         self.filter_shape = filter_shape  # [height, width, n_channels]
         self.strides = strides
@@ -142,6 +146,7 @@ class Convolutional2D(Layer):
         self.biases = None
         self.in_buffer = None
         self.out_buffer = None
+        self.n_jobs = n_jobs
 
     def init_weights(self, dtype, in_shape):
         filters_shape = tuple([self.n_filters] + list(self.filter_shape))
@@ -151,9 +156,9 @@ class Convolutional2D(Layer):
         out_height = (in_shape[1] - (self.filter_shape[0]-1)) // self.strides[0]
         out_width = (in_shape[2] - (self.filter_shape[1]-1)) // self.strides[1]
         out_shape = (in_shape[0], out_height, out_width, self.n_filters)
-        self.out_buffer = np.zeros(out_shape, dtype=dtype)
-        self.in_buffer = np.zeros(self.filters.shape, dtype=dtype)
-        self.error_buffer = np.zeros(in_shape, dtype=dtype)
+        self.out_buffer = np.zeros(out_shape)
+        self.in_buffer = np.zeros(self.filters.shape)
+        self.error_buffer = np.zeros(in_shape)
 
     def _forward(self, X):
         if X.ndim == 3:
@@ -161,8 +166,15 @@ class Convolutional2D(Layer):
         if self.filters is None:
             self.init_weights(X.dtype, X.shape)
         if X.shape[0] > self.out_buffer.shape[0]:
-            self.out_buffer = np.empty([X.shape[0]] + list(self.out_buffer.shape)[1:])
-        conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias)
+            new_shape = tuple([X.shape[0]] + list(self.out_buffer.shape)[1:])
+            self.out_buffer = np.empty(new_shape)
+
+        conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias, self.n_jobs)
+        G = np.copy(self.out_buffer)
+        conv_2d_forward(self.out_buffer, X, self.filters, self.biases, self.strides, self.with_bias, self.n_jobs)
+        G2 = np.copy(self.out_buffer)
+        print(np.isclose(G, G2, rtol=.01, atol=.01).sum(), G.size)
+        
         self.n_instances = X.shape[0]
         return self.out_buffer[:X.shape[0], :, :, :]
 
@@ -172,10 +184,11 @@ class Convolutional2D(Layer):
             a = self.current_input[..., np.newaxis]
         else:
             a = self.current_input
-        conv_2d_backward_weights(self.in_buffer, a, error, self.strides)
+
+        conv_2d_backward_weights(self.in_buffer, a, error, self.strides, self.n_jobs)
         if extra_info['l2_reg'] > 0:
             self.in_buffer += extra_info['l2_reg'] * self.filters  # Derivative of L2 regularization term
-        conv_2d_backward(self.error_buffer[:self.n_instances], error, self.filters, self.strides)  ## uncomment to compute error to propagate
+        conv_2d_backward(self.error_buffer[:self.n_instances], error, self.filters, self.strides, self.n_jobs)  ## uncomment to compute error to propagate
         self.update(self.in_buffer, db)
         return self.error_buffer[:self.n_instances, :, :, :]
 
@@ -204,7 +217,7 @@ class MaxPooling2D(Layer):
             out_height = (X.shape[1] - self.pool_shape[0] + 1) // self.strides[0]
             out_width = (X.shape[2] - self.pool_shape[1] + 1) // self.strides[1]
             self.out_buffer = np.empty((X.shape[0], out_height, out_width, X.shape[3]), dtype=X.dtype)
-            self.in_buffer = np.empty_like(X)
+            self.in_buffer = np.empty(X.shape, dtype=X.dtype)
             self.mask = np.empty(X.shape, dtype=np.int8)
         max_pooling_2d_forward(self.out_buffer, self.mask, X, self.pool_shape, self.strides)
         return self.out_buffer[:X.shape[0], :, :, :]

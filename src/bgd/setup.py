@@ -8,14 +8,10 @@ from numpy.distutils.core import setup as np_setup
 
 DELETE_GENERATED_C_FILES = False
 source_folder = "bgd"
-sub_packages = [
-]
+sub_packages = []
 source_files = [
     (["operators.c"], "operators"),
 ]
-
-extra_compile_args = list() # TODO
-
 
 libraries = ["m"] if os.name == "posix" else list()
 include_dirs = [np.get_include()]
@@ -29,10 +25,11 @@ for sources, extension_name in source_files:
     print(extension_name, sources)
     config.add_extension(
         extension_name, 
-        sources = sources,
-        include_dirs = include_dirs + [os.curdir],
-        libraries = libraries,
-        extra_compile_args = extra_compile_args
+        sources=sources,
+        include_dirs =include_dirs+[os.curdir],
+        libraries=libraries,
+        extra_compile_args=['-fopenmp', '-O3'],
+        extra_link_args=['-fopenmp']
     )
 
 np_setup(**config.todict())

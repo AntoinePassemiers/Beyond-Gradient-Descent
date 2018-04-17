@@ -48,8 +48,10 @@ for source_file in source_files:
     extensions.append(
         Extension(extension_name,
                   sources,
-                  language = "c",
-                  include_dirs = [np.get_include()]
+                  language="c",
+                  include_dirs=[np.get_include()],
+                  extra_compile_args=['-fopenmp', '-O3'],
+                  extra_link_args=['-fopenmp']
         )
     )
 
