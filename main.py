@@ -23,7 +23,54 @@ print('')
 
 dataset = 'mnist'
 
+from time import time
+from bgd.operators import conv_2d_forward_sse, conv_2d_forward
+
+def compare_convolution(nb_rep: int=100):
+    size = (32, 32, 32, 32)
+    kernel_size = (16, 3, 3, 32)
+    strides = [1, 1]
+    biases = np.random.rand(kernel_size[0])
+    array = np.random.rand(*size)
+    kernel = np.random.rand(*kernel_size)
+    output_array = np.empty((size[0], size[1]-kernel_size[1]+1, size[2]-kernel_size[2]+1, kernel_size[0]), dtype=np.float32)
+    for n_jobs in np.arange(4)+1:
+        min_time = np.inf
+        max_time = -np.inf
+        start = time()
+        for _ in range(nb_rep):
+            step_start = time()
+            conv_2d_forward(output_array, array.astype(np.float32), kernel.astype(np.float32), biases.astype(np.float32), strides, True, n_jobs)
+            step_time = time()-step_start
+            if step_time > max_time:
+                max_time = step_time
+            if step_time < min_time:
+                min_time = step_time
+        end = time()
+        print(('No SSE (n_jobs == {:d}): {:g} seconds for {:d} convolutions\n' + \
+               '\ti.e. {:g} sec/convolution. (max, min) == ({:g}, {:g})') \
+               .format(n_jobs, end-start, nb_rep, (end-start)/nb_rep, max_time, min_time))
+    min_time = np.inf
+    max_time = -np.inf
+    start = time()
+    for _ in range(nb_rep):
+        step_start = time()
+        conv_2d_forward_sse(output_array, array.astype(np.float32), kernel.astype(np.float32), biases.astype(np.float32), strides, True)
+        step_time = time()-step_start
+        if step_time > max_time:
+            max_time = step_time
+        if step_time < min_time:
+            min_time = step_time
+    end = time()
+    print(('With SSE: {:g} seconds for {:d} convolutions\n' + \
+           '\ti.e. {:g} sec/convolution. (max, min) == ({:g}, {:g})') \
+           .format(end-start, nb_rep, (end-start)/nb_rep, max_time, min_time))
+
 if __name__ == '__main__':
+    compare_convolution()
+    #test_cnn(dataset)
+    
+def test_cnn(dataset: str):
     if dataset == 'mnist':
         mnist = fetch_mldata("MNIST original")
         X = mnist.data / 255

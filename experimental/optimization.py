@@ -33,31 +33,30 @@ def bfgs(X, A, f):
         yield y
 
 
-def l_bfgs(X, A, f, m=2):
+def l_bfgs(X, A, f, m=5):
     old_grad = None
-    w = 10
     ss, ys = list(), list()
     while True:
         y = f(A, X)
 
         grad = 2 * A * y
 
-        if len(ss) == w:
+        if len(ss) == m:
             q = np.copy(grad)
             alphas = list()
             for s_i, y_i in zip(reversed(ss), reversed(ys)):
                 rho_i = 1. / np.dot(s_i, y_i)
                 alpha_i = rho_i * np.dot(s_i, q)
                 alphas.append(alpha_i)
-                q = q - alpha_i * y_i
+                q -= alpha_i * y_i
             alphas = list(reversed(alphas))
 
             z = np.einsum('i,i,i->i', ys[-1] / np.dot(ys[-1], ys[-1]), ss[-1], q)
 
-            for s_i, p_i, alpha_i in zip(ss, ys, alphas):
-                rho_i = 1. / np.dot(s_i, p_i)
+            for s_i, y_i, alpha_i in zip(ss, ys, alphas):
+                rho_i = 1. / np.dot(s_i, y_i)
                 beta_i = rho_i * np.dot(y_i, z)
-                z = z + s_i * (alpha_i - beta_i)
+                z += s_i * (alpha_i - beta_i)
         else:
             z = grad
 
@@ -65,7 +64,7 @@ def l_bfgs(X, A, f, m=2):
         #alphas = [.00001, .0001, .001, .01, .1]
         #values = np.asarray([f(A - a*z, X) for a in alphas])
         #alpha = alphas[np.argmin(values)]
-        alpha = .001
+        alpha = 1e-3
         # Update weights
         s = alpha * z
         A -= s
@@ -74,7 +73,7 @@ def l_bfgs(X, A, f, m=2):
         if old_grad is not None:
             ys.append(grad - old_grad)
             ss.append(s)
-            if len(ss) > w:
+            if len(ss) > m:
                 ss, ys = ss[1:], ys[1:]
         old_grad = grad
 

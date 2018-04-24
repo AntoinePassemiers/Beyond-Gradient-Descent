@@ -13,6 +13,16 @@ source_files = [
     (["operators.c"], "operators"),
 ]
 
+compile_args = [
+    '-fopenmp',
+    '-O3',
+    '-march=native',
+    '-msse',
+    '-msse2',
+    '-mfma',
+    '-mfpmath=sse',
+]
+
 libraries = ["m"] if os.name == "posix" else list()
 include_dirs = [np.get_include()]
 
@@ -28,7 +38,7 @@ for sources, extension_name in source_files:
         sources=sources,
         include_dirs =include_dirs+[os.curdir],
         libraries=libraries,
-        extra_compile_args=['-fopenmp', '-O3'],
+        extra_compile_args=compile_args,
         extra_link_args=['-fopenmp']
     )
 

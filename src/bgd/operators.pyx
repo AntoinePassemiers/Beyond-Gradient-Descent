@@ -102,18 +102,19 @@ def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :
     cdef int filter_width = filters.shape[2]
     cdef int out_height = output.shape[1]
     cdef int out_width = output.shape[2]
-    np.asarray(output)[:, :, :, :] = 0
+    if add_bias:
+        np.asarray(output)[:, :, :, :] = np.asarray(b[:])
+    else:
+        np.asarray(output)[:, :, :, :] = 0
     with nogil, parallel(num_threads=num_threads):
         for a in prange(n_instances):
-            for f in prange(n_filters):
+            for f in range(n_filters):
                 for i in range(out_height):
                     for j in range(out_width):
-                        for c in prange(n_channels):
+                        for c in range(n_channels):
                             for k in range(filter_height):
                                 for l in range(filter_width):
                                     output[a, i, j, f] += filters[f, k, l, c] * X[a, k+i*c_strides[0], l+j*c_strides[1], c]
-                        if add_bias:
-                            output[a, i, j, f] += b[f]  # Add intercept
 
 
 def conv_2d_forward_sse(cnp.float32_t[:, :, :, :] output,
