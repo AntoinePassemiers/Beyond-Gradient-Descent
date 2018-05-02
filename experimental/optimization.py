@@ -61,10 +61,10 @@ def l_bfgs(X, A, f, m=5):
             z = grad
 
 
-        #alphas = [.00001, .0001, .001, .01, .1]
-        #values = np.asarray([f(A - a*z, X) for a in alphas])
-        #alpha = alphas[np.argmin(values)]
-        alpha = 1e-3
+        # Line search... kind of
+        alphas = [.00001, .0001, .001, .01, .1]
+        values = np.asarray([f(A - a*z, X) for a in alphas])
+        alpha = alphas[np.argmin(values)]
         # Update weights
         s = alpha * z
         A -= s
