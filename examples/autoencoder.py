@@ -3,6 +3,8 @@
 # author : Antoine Passemiers, Robin Petit
 
 from bgd.nn import NeuralStack
+from bgd.batch import SGDBatching
+from bgd.errors import MSE
 from bgd.layers import FullyConnected, Activation, Convolutional2D, GaussianNoise, Dropout
 from bgd.initializers import GaussianInitializer, UniformInitializer
 from bgd.optimizers import MomentumOptimizer, AdamOptimizer
@@ -38,9 +40,10 @@ nn.add(FullyConnected(50, 50, initializer=initializer))
 nn.add(Activation(function='tanh'))
 nn.add(FullyConnected(50, 28*28, initializer=initializer))
 
-
 optimizer = AdamOptimizer(learning_rate=.01)
-nn.train(X_train, X_train, error_op='mse', optimizer=optimizer, batch_size=32, alpha=0.001, epochs=6, print_every=10)
+nn.add(optimizer)
+nn.add(MSE())
+nn.train(X_train, X_train, batch_size=32, alpha_reg=0.001, epochs=6, print_every=10)
 
 f, axarr = plt.subplots(2,2)
 for i in range(2):

@@ -1,19 +1,15 @@
 # -*- coding: utf-8 -*-
-# nn.pyx
+# nn.py
 # author : Antoine Passemiers, Robin Petit
-# distutils: language=c
-# cython: boundscheck=False
-# cython: initializedcheck=False
-# cython: nonecheck=False
-# cython: overflowcheck=False
 
-from bgd.layers import Dropout
+from bgd.batch import Batching, SGDBatching
+from bgd.errors import Error
+from bgd.layers import Layer, Dropout
 from bgd.errors import MSE, CrossEntropy
 from bgd.optimizers import MomentumOptimizer, Optimizer
-from bgd.utils import log
+from bgd.utils import log, RequiredComponentError
 
 import copy
-
 import numpy as np
 
 
@@ -21,16 +17,21 @@ class NeuralStack:
 
     def __init__(self):
         self.layers = list()
+        self.batch_op = None
+        self.error_op = None
+        self.base_optimizer = None
 
-    def add(self, layer):
-        self.layers.append(layer)
-
-    def mini_batches(self, X, y, batch_size=50, shuffle=True):
-        indices = np.arange(0, len(X), batch_size)
-        if shuffle:
-            np.random.shuffle(indices)
-        for i in indices:
-            yield X[i:i + batch_size], y[i:i + batch_size]
+    def add(self, component):
+        if isinstance(component, Layer):
+            self.layers.append(component)
+        elif isinstance(component, Optimizer):
+            self.base_optimizer = component
+        elif isinstance(component, Error):
+            self.error_op = component
+        elif isinstance(component, Batching):
+            self.batch_op = component
+        else:
+            raise WrongComponentTypeError("Unknown component type")
 
     def binarize_labels(self, y):
         unique_values = np.unique(y)
@@ -56,17 +57,22 @@ class NeuralStack:
             nb_correct += (val_probs.argmax(axis=1) == y_val[indices]).sum()
         return 100 * nb_correct / X_val.shape[0]
 
-    def train(self, X, y, epochs=1000, optimizer='default', error_op='cross-entropy',
-              batch_size=200, alpha=.0001, print_every=50, validation_fraction=0.1):
-        batch_size = min(len(X), batch_size)
-        alpha /= batch_size
-        error_op = CrossEntropy() if error_op.lower() == 'cross-entropy' else MSE()
+    def train(self, X, y, epochs=1000, batch_size=200, alpha_reg=.0001,
+              print_every=50, validation_fraction=0.1):
+
         errors = list()
 
+        # Check batch optimization method
+        if self.batch_op is None:
+            raise RequiredComponentError(Batching.__name__)
+
         # Check optimizer
-        if optimizer == 'default':
-            optimizer = MomentumOptimizer(learning_rate=.001, momentum=.9)
-        assert(isinstance(optimizer, Optimizer))
+        if self.base_optimizer is None:
+            raise RequiredComponentError(Optimizer.__name__)
+
+        # Check loss function
+        if self.error_op is None:
+            raise RequiredComponentError(Error.__name__)
 
         # Split data into training data and validation data for early stopping
         if validation_fraction > 0:
@@ -75,7 +81,7 @@ class NeuralStack:
             X_train, y_train = X, y
 
         # Binarize labels if classification task
-        if isinstance(error_op, CrossEntropy):
+        if isinstance(self.error_op, CrossEntropy):
             y_train = self.binarize_labels(y_train)
 
         # Activate dropout
@@ -85,18 +91,26 @@ class NeuralStack:
 
         # Create one independent optimizer per layer
         for layer in self.layers:
-            layer.set_optimizer(copy.deepcopy(optimizer))
+            layer.set_optimizer(copy.deepcopy(self.base_optimizer))
 
         seen_instances = 0
         for epoch in range(epochs):
-            for batch_id, (batch_x, batch_y) in enumerate(self.mini_batches(X_train, y_train, batch_size=batch_size)):
+            batch_id = 0
+            self.batch_op.start(X_train, y_train)
+            next_batch = self.batch_op.next()
+            while next_batch:
+                # Retrieve batch for next iteration
+                (batch_x, batch_y) = next_batch
+                next_batch = self.batch_op.next()
+
                 # Forward pass
                 predictions = self.eval(batch_x)
 
                 # Compute loss function
-                loss = error_op.eval(batch_y, predictions)
+                loss = self.error_op.eval(batch_y, predictions)
 
                 # Apply L2 regularization
+                alpha = alpha_reg / self.batch_op.batch_size
                 if alpha > 0:
                     for layer in self.layers:
                         params = layer.get_parameters()
@@ -105,18 +119,18 @@ class NeuralStack:
                 errors.append(loss)
 
                 # Compute gradient of the loss function
-                error = error_op.grad(batch_y, predictions)
+                error = self.error_op.grad(batch_y, predictions)
 
                 # Propagate error through each layer
                 for layer in reversed(self.layers):
                     extra_info = {'l2_reg': alpha}
                     error = layer.backward(error, extra_info)
 
-                seen_instances += batch_size
+                seen_instances += self.batch_op.batch_size
                 if seen_instances % print_every == 0:
                     batch_id += 1
                     # Warning: This code section is ugly
-                    if isinstance(error_op, CrossEntropy):
+                    if isinstance(self.error_op, CrossEntropy):
                         if validation_fraction > 0:
                             val_accuracy = self.get_accuracy(X_val, y_val)
                         else:
@@ -126,7 +140,7 @@ class NeuralStack:
                     else:
                         if validation_fraction > 0:
                             val_preds = self.eval(X_val)
-                            val_mse = error_op.eval(batch_y, val_preds)
+                            val_mse = self.error_op.eval(batch_y, val_preds)
                         else:
                             val_accuracy = -1
                         log('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation MSE: {3: <15}'.format(

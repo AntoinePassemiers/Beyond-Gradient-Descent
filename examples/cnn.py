@@ -3,6 +3,8 @@
 # author : Antoine Passemiers, Robin Petit
 
 from bgd.nn import NeuralStack
+from bgd.batch import SGDBatching
+from bgd.errors import CrossEntropy
 from bgd.layers import FullyConnected, Activation, Flatten, Convolutional2D, MaxPooling2D, Dropout
 from bgd.initializers import GaussianInitializer, UniformInitializer
 from bgd.operators import conv_2d_forward_sse, conv_2d_forward
@@ -117,9 +119,12 @@ def test_cnn(dataset: str):
         nn.add(FullyConnected(200, 10))
         nn.add(Activation('softmax'))
 
+    nn.add(optimizer)
+    nn.add(CrossEntropy())
+    nn.add(SGDBatching(1024))
 
-    errors = nn.train(X_train, y_train, optimizer=optimizer, batch_size=batch_size,
-             epochs=10, print_every=1*batch_size, validation_fraction=0.0, alpha=.1)
+    errors = nn.train(X_train, y_train, batch_size=batch_size,
+             epochs=10, print_every=1*batch_size, validation_fraction=0.0, alpha_reg=.1)
     accuracy_test = nn.get_accuracy(X_test, y_test, batch_size=1024)
     log('Accuracy on test: {:.3f}%'.format(accuracy_test))
 
