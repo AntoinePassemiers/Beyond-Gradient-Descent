@@ -4,10 +4,15 @@ import scipy.sparse.linalg
 import matplotlib.pyplot as plt
 
 
-def gradient_descent(X, A, f, alpha=.001):
+def gradient_descent(X, A, f):
     while True:
         y = f(A, X)
         grad = 2 * A * y
+
+        # Line search... kind of
+        alphas = [.00001, .0001, .001, .01, .1]
+        values = np.asarray([f(A - a*grad, X) for a in alphas])
+        alpha = alphas[np.argmin(values)]
         A -= alpha * grad
         yield y
 
@@ -33,66 +38,99 @@ def bfgs(X, A, f):
         yield y
 
 
-def l_bfgs(X, A, f, m=5):
+def inner_product(a, b, c):
+    return np.repeat(np.dot(a, c), len(a)) * b
+
+
+class History:
+
+    def __init__(self, m):
+        self.padding = 0
+        self.m = m
+        self.values = list()
+    
+    def __getitem__(self, key):
+        return self.values[key-self.padding]
+    
+    def __setitem__(self, key, value):
+        if key-self.padding == len(self.values):
+            self.values.append(value)
+            if len(self.values) > self.m:
+                self.values = self.values[1:]
+                self.padding += 1
+        elif key-self.padding < len(self.values):
+            self.values[key-self.padding] = value
+    
+    def __len__(self):
+        return len(self.values) + self.padding
+
+
+
+def l_bfgs(X, A, f, m=8):
     old_grad = None
-    ss, ys = list(), list()
+
+    y = History(m)
+    s = History(m)
+    alpha = History(m)
+
+    k = -1
     while True:
-        y = f(A, X)
+        pred = f(A, X)
+        grad = 2 * A * pred
 
-        grad = 2 * A * y
-
-        if len(ss) == m:
+        if k >= m:
             q = np.copy(grad)
-            alphas = list()
-            for s_i, y_i in zip(reversed(ss), reversed(ys)):
-                rho_i = 1. / np.dot(s_i, y_i)
-                alpha_i = rho_i * np.dot(s_i, q)
-                alphas.append(alpha_i)
-                q -= alpha_i * y_i
-            alphas = list(reversed(alphas))
+            for i in range(k-1, k-m-1, -1):
+                rho_i = 1. / np.dot(s[i], y[i])
+                q -= alpha[i] * y[i]
 
-            z = np.einsum('i,i,i->i', ys[-1] / np.dot(ys[-1], ys[-1]), ss[-1], q)
+            z = inner_product(y[k-1] / np.dot(y[k-1], y[k-1]), s[k-1], q)
 
-            for s_i, y_i, alpha_i in zip(ss, ys, alphas):
-                rho_i = 1. / np.dot(s_i, y_i)
-                beta_i = rho_i * np.dot(y_i, z)
-                z += s_i * (alpha_i - beta_i)
+            for i in range(k-m, k, 1):
+                rho_i = 1. / np.dot(s[i], y[i])
+                beta = rho_i * np.dot(y[i], z)
+                z += s[i] * (alpha[i] - beta)
         else:
             z = grad
 
-
         # Line search... kind of
-        alphas = [.00001, .0001, .001, .01, .1]
-        values = np.asarray([f(A - a*z, X) for a in alphas])
-        alpha = alphas[np.argmin(values)]
+        aas = [.00001, .0001, .001, .01, .1]
+        values = np.asarray([f(A - a*z, X) for a in aas])
+        aa = aas[np.argmin(values)]
         # Update weights
-        s = alpha * z
-        A -= s
-        yield y
+        ss = aa * z
+        A -= ss
+        yield pred
 
         if old_grad is not None:
-            ys.append(grad - old_grad)
-            ss.append(s)
-            if len(ss) > m:
-                ss, ys = ss[1:], ys[1:]
+            y[k] = grad - old_grad
+            s[k] = ss
+            rho_i = 1. / np.dot(s[k], y[k])
+            alpha[k] = rho_i * np.dot(s[k], grad)
+
         old_grad = grad
+        k += 1
 
 
-n_samples = 1
-n_variables = 500
+def main():
+    n_samples = 1
+    n_variables = 500
 
-X = np.random.rand(n_samples, n_variables) - (np.random.rand(n_variables) - 0.5) * 4
-f = lambda a, x: np.dot(x, a) ** 2
+    X = np.random.rand(n_samples, n_variables) - (np.random.rand(n_variables) - 0.5) * 4
+    f = lambda a, x: np.dot(x, a) ** 2
 
-X = np.squeeze(X)
+    X = np.squeeze(X)
 
-A = (np.random.rand(n_variables) - 0.5) * 2
+    A = (np.random.rand(n_variables) - 0.5) * 10
 
-i = 0
-for y1, y2 in zip(gradient_descent(X, np.copy(A), f), l_bfgs(X, np.copy(A), f)):
-    if i % 5 == 0:
-        print("First order: %f - Second order: %f" % (y1, y2))
-    i += 1
+    i = 0
+    for y1, y2 in zip(gradient_descent(X, np.copy(A), f), l_bfgs(X, np.copy(A), f)):
+        if i % 5 == 0:
+            print("First order: %f - Second order: %f" % (y1, y2))
+        i += 1
 
-    if i == 40:
-        break
+        if i == 80:
+            break
+
+
+main()
