@@ -57,7 +57,8 @@ class Layer(metaclass=ABCMeta):
 
 class FullyConnected(Layer):
 
-    def __init__(self, n_in, n_out, copy=False, with_bias=True, dtype=np.double, initializer=GaussianInitializer(0, .01)):
+    def __init__(self, n_in, n_out, copy=False, with_bias=True,
+                 dtype=np.double, initializer=GaussianInitializer(0, .01)):
         Layer.__init__(self, copy=copy, save_output=False)
         self.with_bias = with_bias
         self.dtype = dtype
@@ -83,7 +84,9 @@ class FullyConnected(Layer):
         return ret
 
     def update(self, dW, db):
-        self.weights -= self.optimizer.update(dW)
+        delta = self.optimizer.update(dW)
+        assert(delta.shape == self.weights.shape)
+        self.weights -= delta
         if self.with_bias:
             self.biases -= self.bias_optimizer.update(db)
 
@@ -139,7 +142,9 @@ class Activation(Layer):
 
 
 class Convolutional2D(Layer):
-    def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True, copy=False, initializer=GaussianInitializer(0, .02), n_jobs=4):
+
+    def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True,
+                 copy=False, initializer=GaussianInitializer(0, .02), n_jobs=4):
         Layer.__init__(self, copy=copy, save_output=False)
         self.filter_shape = filter_shape  # [height, width, n_channels]
         self.strides = strides
@@ -174,11 +179,14 @@ class Convolutional2D(Layer):
             new_shape = tuple([X.shape[0]] + list(self.out_buffer.shape)[1:])
             self.out_buffer = np.empty(new_shape)
 
-        conv_2d_forward(self.out_buffer, X.astype(np.float32), self.filters, self.biases, self.strides, self.with_bias, self.n_jobs)
+        conv_2d_forward(self.out_buffer, X.astype(np.float32), self.filters,
+                        self.biases, self.strides, self.with_bias, self.n_jobs)
         G = np.copy(self.out_buffer)
-        conv_2d_forward_sse(self.out_buffer, X.astype(np.float32), self.filters, self.biases, self.strides, self.with_bias)
+        conv_2d_forward_sse(self.out_buffer, X.astype(np.float32), self.filters,
+                            self.biases, self.strides, self.with_bias)
         G2 = np.copy(self.out_buffer)
-        print("Forward - similarity between regular version and SSE version: %f" % (np.isclose(G, G2).sum() / float(G.size)))
+        print("Forward - similarity between regular version and SSE version: %f" \
+            % (np.isclose(G, G2).sum() / float(G.size)))
         
         self.n_instances = X.shape[0]
         return self.out_buffer[:X.shape[0], :, :, :]
@@ -190,10 +198,12 @@ class Convolutional2D(Layer):
         else:
             a = self.current_input
 
-        conv_2d_backward_weights(self.in_buffer, a.astype(np.float32), error.astype(np.float32), self.strides, self.n_jobs)
+        conv_2d_backward_weights(self.in_buffer, a.astype(np.float32),
+                                 error.astype(np.float32), self.strides, self.n_jobs)
         if extra_info['l2_reg'] > 0:
             self.in_buffer += extra_info['l2_reg'] * self.filters  # Derivative of L2 regularization term
-        conv_2d_backward(self.error_buffer[:self.n_instances], error.astype(np.float32), self.filters, self.strides, self.n_jobs)  ## uncomment to compute error to propagate
+        conv_2d_backward(self.error_buffer[:self.n_instances],
+                         error.astype(np.float32), self.filters, self.strides, self.n_jobs)  ## uncomment to compute error to propagate
         self.update(self.in_buffer, db)
         return self.error_buffer[:self.n_instances, :, :, :]
 

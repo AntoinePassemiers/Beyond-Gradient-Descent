@@ -31,24 +31,24 @@ if __name__ == "__main__":
     X = (mnist.data / 255 - .5) * 2
     y = np.reshape(mnist.target, (mnist.target.shape[0], 1))
     X = X.reshape((X.shape[0], 28, 28, 1)) # New shape: (None, 28, 28, 1)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=1./7.)
 
     nn = NeuralStack()
-    n_hidden = 512
+    n_hidden = 200
     initializer_1 = GaussianInitializer(0, 1./28)
     initializer_2 = UniformInitializer(0, 1./n_hidden)
 
     nn.add(Flatten())
     nn.add(FullyConnected(28*28, n_hidden, initializer=initializer_1))
-    nn.add(Activation(function='relu'))
-    nn.add(FullyConnected(n_hidden, 10, initializer=initializer_2))
     nn.add(Activation(function='sigmoid'))
+    nn.add(FullyConnected(n_hidden, 10, initializer=initializer_2))
+    nn.add(Activation(function='softmax'))
 
     nn.add(CrossEntropy())
     nn.add(SGDBatching(512))
-    # nn.add(AdamOptimizer())
-    nn.add(LBFGS(8))
-    nn.add(MomentumOptimizer(learning_rate=0.001, momentum=0))
+    #nn.add(AdamOptimizer())
+    nn.add(MomentumOptimizer(learning_rate=0.007, momentum=0))
+    #nn.add(LBFGS(10))
 
     nn.train(X_train, y_train, alpha_reg=0.0001, epochs=4, print_every=100)
     train_acc = accuracy_score(np.squeeze(y_train), nn.eval(X_train).argmax(axis=1))

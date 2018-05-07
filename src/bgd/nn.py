@@ -62,18 +62,6 @@ class NeuralStack:
 
         errors = list()
 
-        # Check batch optimization method
-        if self.batch_op is None:
-            raise RequiredComponentError(Batching.__name__)
-
-        # Check optimizer
-        if self.base_optimizer is None:
-            raise RequiredComponentError(Optimizer.__name__)
-
-        # Check loss function
-        if self.error_op is None:
-            raise RequiredComponentError(Error.__name__)
-
         # Split data into training data and validation data for early stopping
         if validation_fraction > 0:
             X_train, y_train, X_val, y_val = self.split_train_val(X, y, validation_fraction)
@@ -83,11 +71,6 @@ class NeuralStack:
         # Binarize labels if classification task
         if isinstance(self.error_op, CrossEntropy):
             y_train = self.binarize_labels(y_train)
-
-        # Activate dropout
-        for layer in self.layers:
-            if isinstance(layer, Dropout):
-                layer.activate()
 
         # Create one independent optimizer per layer
         for layer in self.layers:
@@ -145,15 +128,32 @@ class NeuralStack:
                             val_accuracy = -1
                         log('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation MSE: {3: <15}'.format(
                             epoch, str(batch_id) + ')', loss, val_mse))
-
-        # Deactivate dropout
-        for layer in self.layers:
-            if isinstance(layer, Dropout):
-                layer.deactivate()
-
         return errors
 
     def eval(self, X):
         for layer in self.layers:
             X = layer.forward(X)
         return X
+
+    def activate_dropout(self):
+        for layer in self.layers:
+            if isinstance(layer, Dropout):
+                layer.activate()
+    
+    def deactivate_dropout(self):
+        for layer in self.layers:
+            if isinstance(layer, Dropout):
+                layer.deactivate()
+
+    def check_components(self):
+        # Check batch optimization method
+        if self.batch_op is None:
+            raise RequiredComponentError(Batching.__name__)
+
+        # Check optimizer
+        if self.base_optimizer is None:
+            raise RequiredComponentError(Optimizer.__name__)
+
+        # Check loss function
+        if self.error_op is None:
+            raise RequiredComponentError(Error.__name__)

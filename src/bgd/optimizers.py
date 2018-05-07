@@ -28,12 +28,11 @@ class MomentumOptimizer(Optimizer):
     
     def _update(self, grad):
         delta = self.learning_rate * grad
-        delta2 = 0
         if self.momentum > 0:
             if self.previous_grad is not None:
-                delta2 = self.momentum * self.previous_grad
+                delta += self.momentum * self.previous_grad
             self.previous_grad = delta
-        return delta + delta2
+        return delta
 
 
 class AdamOptimizer(Optimizer):
@@ -61,69 +60,63 @@ class AdamOptimizer(Optimizer):
         self.moment_2 = self.beta_2 * self.moment_2 + (1. - self.beta_2) * grad ** 2
         m_hat = self.moment_1 / (1. - self.beta_1 ** self.step)
         v_hat = self.moment_2 / (1. - self.beta_2 ** self.step)
-        return self.learning_rate * (m_hat / (np.sqrt(v_hat) + self.epsilon))
+        delta = self.learning_rate * (m_hat / (np.sqrt(v_hat) + self.epsilon))
+        return delta
 
 
 class LBFGS(Optimizer):
 
-    class History:
-
-        def __init__(self, m):
-            self.padding = 0
-            self.m = m
-            self.values = list()
-        
-        def __getitem__(self, key):
-            return self.values[key-self.padding]
-        
-        def __setitem__(self, key, value):
-            if key-self.padding == len(self.values):
-                self.values.append(value)
-                if len(self.values) > self.m:
-                    self.values = self.values[1:]
-                    self.padding += 1
-            elif key-self.padding < len(self.values):
-                self.values[key-self.padding] = value
-    
-        def __len__(self):
-            return len(self.values) + self.padding
-
-    def __init__(self, m):
+    def __init__(self, m=10):
         self.m = m
         self.k = -1
         self.previous_grad = None
-        self.y = LBFGS.History(self.m)
-        self.s = LBFGS.History(self.m)
-        self.alpha = LBFGS.History(self.m)
+        self.y = list()
+        self.s = list()
+        self.alpha = list()
 
-    def _update(self, grad):
+    def _update(self, batch_grad):
+        #print(batch_grad.shape)
+        grad = batch_grad # TODO
         if self.k >= self.m:
             q = np.copy(grad)
-            for i in range(self.k-1, self.k-self.m-1, -1):
-                rho_i = 1. / np.dot(self.s[i], self.y[i])
-                q -= self.alpha[i] * self.y[i]
+            for s_i, y_i, alpha_i in reversed(list(zip(self.s, self.y, self.alpha))):
+                q -= alpha_i * y_i
 
-            z = inner_product(self.y[self.k-1] \
-                / np.dot(self.y[self.k-1], self.y[self.k-1]), self.s[self.k-1], q)
+            z = self.inner_product(self.y[-1] \
+                / np.dot(self.y[-1], self.y[-1]), self.s[-1], q)
 
-            for i in range(self.k-self.m, self.k, 1):
-                rho_i = 1. / np.dot(self.s[i], self.y[i])
-                beta = rho_i * np.dot(self.y[i], z)
-                z += self.s[i] * (self.alpha[i] - beta)
+            for s_i, y_i, alpha_i in zip(self.s, self.y, self.alpha):
+                rho_i = 1. / np.dot(s_i, y_i)
+                beta_i = rho_i * np.dot(y_i, z)
+                z += s_i * (alpha_i - beta_i)
         else:
             z = grad
 
-        # Update history
-        if self.old_grad is not None:
-            self.y[self.k] = grad - self.old_grad
-            self.s[self.k] = ss
-            rho_i = 1. / np.dot(self.s[self.k], self.y[self.k])
-            self.alpha[self.k] = rho_i * np.dot(self.s[self.k], grad)
+        # TODO: LINE SEARCH
+        steplength = self.compute_steplength(grad)
+        steplength = .005
+        delta = steplength * z
 
-        self.old_grad = grad
+        # Update history
+        if self.previous_grad is not None:
+            self.y.append(grad - self.previous_grad)
+            self.s.append(delta)
+            rho_i = 1. / np.dot(self.s[-1], self.y[-1])
+            self.alpha.append(rho_i * np.dot(self.s[-1], grad))
+
+            if len(self.y) > self.m:
+                self.y = self.y[1:]
+                self.s = self.s[1:]
+                self.alpha = self.alpha[1:]
+
+        self.previous_grad = grad
         self.k += 1
 
-        # TODO: LINE SEARCH
-        aa = .001
+        return delta
 
-        return aa * z
+    def inner_product(self, a, b, c):
+        return np.repeat(np.dot(a, c), len(a)) * b
+    
+    def compute_steplength(self, grad):
+        # print(grad.shape)
+        pass
