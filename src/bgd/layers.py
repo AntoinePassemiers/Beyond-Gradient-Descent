@@ -20,11 +20,22 @@ class Layer(metaclass=ABCMeta):
         self.with_bias = False
         self.save_output = save_output
         self.save_input = save_input
+        self.propagate = True
 
     def set_optimizer(self, optimizer):
         self.optimizer = optimizer
         if self.with_bias:
             self.bias_optimizer = copy.deepcopy(optimizer)
+    
+    def activate_propagation(self):
+        self.propagate = True
+
+    def deactivate_propagation(self):
+        self.propagate = False
+    
+    def learnable(self):
+        parameters = self.get_parameters()
+        return not (parameters is None or len(parameters) == 0)
 
     @abstractmethod
     def get_parameters(self):
@@ -50,9 +61,10 @@ class Layer(metaclass=ABCMeta):
         return current_output
 
     def backward(self, *args, **kwargs):
-        out = self._backward(*args, **kwargs)
-        assert(out.shape == self.input_shape)
-        return out
+        if self.propagate or self.learnable():
+            out = self._backward(*args, **kwargs)
+            assert(out.shape == self.input_shape)
+            return out
 
 
 class FullyConnected(Layer):
@@ -79,9 +91,12 @@ class FullyConnected(Layer):
         if extra_info['l2_reg'] > 0:
             gradient_weights += extra_info['l2_reg'] * self.weights # Derivative of L2 regularization term
         gradient_bias = np.sum(error, axis=0, keepdims=True)
-        ret = np.dot(error, self.weights.T)
-        self.update(gradient_weights, gradient_bias)
-        return ret
+        if self.propagate:
+            signal = np.dot(error, self.weights.T)
+            self.update(gradient_weights, gradient_bias)
+            return signal
+        else:
+            self.update(gradient_weights, gradient_bias)
 
     def update(self, dW, db):
         delta = self.optimizer.update(dW)
@@ -202,10 +217,13 @@ class Convolutional2D(Layer):
                                  error.astype(np.float32), self.strides, self.n_jobs)
         if extra_info['l2_reg'] > 0:
             self.in_buffer += extra_info['l2_reg'] * self.filters  # Derivative of L2 regularization term
-        conv_2d_backward(self.error_buffer[:self.n_instances],
-                         error.astype(np.float32), self.filters, self.strides, self.n_jobs)  ## uncomment to compute error to propagate
-        self.update(self.in_buffer, db)
-        return self.error_buffer[:self.n_instances, :, :, :]
+        if self.propagate:
+            conv_2d_backward(self.error_buffer[:self.n_instances],
+                             error.astype(np.float32), self.filters, self.strides, self.n_jobs)
+            self.update(self.in_buffer, db)
+            return self.error_buffer[:self.n_instances, :, :, :]
+        else:
+            self.update(self.in_buffer, db)
 
     def update(self, dW, db):
         dW = self.optimizer.update(dW)

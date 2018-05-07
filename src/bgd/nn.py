@@ -76,6 +76,9 @@ class NeuralStack:
         for layer in self.layers:
             layer.set_optimizer(copy.deepcopy(self.base_optimizer))
 
+        # Deactivate signal propagation though first layer
+        self.layers[0].deactivate_propagation()
+
         seen_instances = 0
         for epoch in range(epochs):
             batch_id = 0
