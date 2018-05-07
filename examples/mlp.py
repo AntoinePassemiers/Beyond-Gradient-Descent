@@ -45,12 +45,9 @@ if __name__ == "__main__":
     nn.add(Activation(function='sigmoid'))
 
     nn.add(CrossEntropy())
-
     nn.add(SGDBatching(512))
-
     # nn.add(AdamOptimizer())
     nn.add(LBFGS(8))
-
     nn.add(MomentumOptimizer(learning_rate=0.001, momentum=0))
 
     nn.train(X_train, y_train, alpha_reg=0.0001, epochs=4, print_every=100)
