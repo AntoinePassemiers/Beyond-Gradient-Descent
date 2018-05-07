@@ -62,3 +62,68 @@ class AdamOptimizer(Optimizer):
         m_hat = self.moment_1 / (1. - self.beta_1 ** self.step)
         v_hat = self.moment_2 / (1. - self.beta_2 ** self.step)
         return self.learning_rate * (m_hat / (np.sqrt(v_hat) + self.epsilon))
+
+
+class LBFGS(Optimizer):
+
+    class History:
+
+        def __init__(self, m):
+            self.padding = 0
+            self.m = m
+            self.values = list()
+        
+        def __getitem__(self, key):
+            return self.values[key-self.padding]
+        
+        def __setitem__(self, key, value):
+            if key-self.padding == len(self.values):
+                self.values.append(value)
+                if len(self.values) > self.m:
+                    self.values = self.values[1:]
+                    self.padding += 1
+            elif key-self.padding < len(self.values):
+                self.values[key-self.padding] = value
+    
+        def __len__(self):
+            return len(self.values) + self.padding
+
+    def __init__(self, m):
+        self.m = m
+        self.k = -1
+        self.previous_grad = None
+        self.y = LBFGS.History(self.m)
+        self.s = LBFGS.History(self.m)
+        self.alpha = LBFGS.History(self.m)
+
+    def _update(self, grad):
+        if self.k >= self.m:
+            q = np.copy(grad)
+            for i in range(self.k-1, self.k-self.m-1, -1):
+                rho_i = 1. / np.dot(self.s[i], self.y[i])
+                q -= self.alpha[i] * self.y[i]
+
+            z = inner_product(self.y[self.k-1] \
+                / np.dot(self.y[self.k-1], self.y[self.k-1]), self.s[self.k-1], q)
+
+            for i in range(self.k-self.m, self.k, 1):
+                rho_i = 1. / np.dot(self.s[i], self.y[i])
+                beta = rho_i * np.dot(self.y[i], z)
+                z += self.s[i] * (self.alpha[i] - beta)
+        else:
+            z = grad
+
+        # Update history
+        if self.old_grad is not None:
+            self.y[self.k] = grad - self.old_grad
+            self.s[self.k] = ss
+            rho_i = 1. / np.dot(self.s[self.k], self.y[self.k])
+            self.alpha[self.k] = rho_i * np.dot(self.s[self.k], grad)
+
+        self.old_grad = grad
+        self.k += 1
+
+        # TODO: LINE SEARCH
+        aa = .001
+
+        return aa * z
