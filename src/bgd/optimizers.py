@@ -74,9 +74,8 @@ class LBFGS(Optimizer):
         self.s = list()
         self.alpha = list()
 
-    def _update(self, batch_grad):
+    def _update(self, grad):
         #print(batch_grad.shape)
-        grad = batch_grad # TODO
         if self.k >= self.m:
             q = np.copy(grad)
             for s_i, y_i, alpha_i in reversed(list(zip(self.s, self.y, self.alpha))):

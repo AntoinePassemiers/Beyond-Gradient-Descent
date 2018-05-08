@@ -41,37 +41,16 @@ def bfgs(X, A, f):
 def inner_product(a, b, c):
     return np.repeat(np.dot(a, c), len(a)) * b
 
-
-class History:
-
-    def __init__(self, m):
-        self.padding = 0
-        self.m = m
-        self.values = list()
-    
-    def __getitem__(self, key):
-        return self.values[key-self.padding]
-    
-    def __setitem__(self, key, value):
-        if key-self.padding == len(self.values):
-            self.values.append(value)
-            if len(self.values) > self.m:
-                self.values = self.values[1:]
-                self.padding += 1
-        elif key-self.padding < len(self.values):
-            self.values[key-self.padding] = value
-    
-    def __len__(self):
-        return len(self.values) + self.padding
-
-
+def compute_rho(s_i, y_i):
+    den = np.dot(s_i, y_i)
+    return (1. / den) if (den > 0) else 0
 
 def l_bfgs(X, A, f, m=8):
     old_grad = None
 
-    y = History(m)
-    s = History(m)
-    alpha = History(m)
+    y = list()
+    s = list()
+    alpha = list()
 
     k = -1
     while True:
@@ -80,33 +59,43 @@ def l_bfgs(X, A, f, m=8):
 
         if k >= m:
             q = np.copy(grad)
-            for i in range(k-1, k-m-1, -1):
-                rho_i = 1. / np.dot(s[i], y[i])
-                q -= alpha[i] * y[i]
+            for s_i, y_i, alpha_i in reversed(list(zip(s, y, alpha))):
+                q -= alpha_i * y_i
 
-            z = inner_product(y[k-1] / np.dot(y[k-1], y[k-1]), s[k-1], q)
+            den = np.dot(y[-1], y[-1])
+            if den > 0:
+                z = inner_product(y[-1] / den, s[-1], q)
+            else:
+                z = 0
 
-            for i in range(k-m, k, 1):
-                rho_i = 1. / np.dot(s[i], y[i])
-                beta = rho_i * np.dot(y[i], z)
-                z += s[i] * (alpha[i] - beta)
+            for s_i, y_i, alpha_i in zip(s, y, alpha):
+                rho_i = compute_rho(s_i, y_i)
+                beta_i = rho_i * np.dot(y_i, z)
+                z += s_i * (alpha_i - beta_i)
         else:
             z = grad
 
-        # Line search... kind of
-        aas = [.00001, .0001, .001, .01, .1]
-        values = np.asarray([f(A - a*z, X) for a in aas])
-        aa = aas[np.argmin(values)]
+        # Line search
+        c1 = 1e-04
+        steplength = 1.0
+        while f(A - steplength*z, X) > pred - c1*steplength*np.dot(grad, z):
+            steplength /= 2
+
         # Update weights
-        ss = aa * z
-        A -= ss
+        delta = steplength * z
+        A -= delta
         yield pred
 
         if old_grad is not None:
-            y[k] = grad - old_grad
-            s[k] = ss
-            rho_i = 1. / np.dot(s[k], y[k])
-            alpha[k] = rho_i * np.dot(s[k], grad)
+            y.append(grad - old_grad)
+            s.append(delta)
+            rho_i = compute_rho(s[-1], y[-1])
+            alpha.append(rho_i * np.dot(s[-1], grad))
+
+            if len(y) > m:
+                y = y[1:]
+                s = s[1:]
+                alpha = alpha[1:]
 
         old_grad = grad
         k += 1
