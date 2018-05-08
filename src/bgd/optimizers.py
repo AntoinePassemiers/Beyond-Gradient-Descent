@@ -7,18 +7,44 @@ import numpy as np
 
 
 class Optimizer(metaclass=ABCMeta):
-
-    @abstractmethod
-    def _update(self, grad):
-        pass
+    """ Base class for first order and second order optimizers. """
     
     def update(self, grad):
+        """ Computes best move in the parameter space at
+        current iteration using optimization techniques.
+        Input gradient is temporarily flattened as a vector.
+
+        Args:
+            grad (np.ndarray): Error gradient with respect to
+                the parameters of current layer.
+        
+        Returns:
+            np.ndarray: Array of the same shape as the input,
+                representing the best move in parameter space 
+                (steepest descent or hessian direction)
+                of length determined by the steplength.
+        """
         in_shape = grad.shape
         delta = self._update(grad.flatten(order='C'))
         return delta.reshape(in_shape, order='C')
 
+    @abstractmethod
+    def _update(self, grad):
+        pass
+
 
 class MomentumOptimizer(Optimizer):
+    """ Simple first order optimizer with momentum support.
+    
+    Args:
+        learning_rate (:obj:`float`, optional): Constant steplength.
+        momentum (:obj:`float`, optional): Persistence of previous
+            gradient vectors. Old vectors are re-used to compute the
+            new search direction, with respect to the momentum value.
+    
+    Attributes:
+        previous_grad (np.ndarray): Gradient vector at previous iteration.
+    """
 
     def __init__(self, learning_rate=.005, momentum=.9):
         assert(0 <= momentum <= 1)
@@ -36,15 +62,27 @@ class MomentumOptimizer(Optimizer):
 
 
 class AdamOptimizer(Optimizer):
+    """
+    Args:
+        learning_rate (:obj:`float`, optional): Constant steplength.
+        beta_1 (:obj:`float`, optional): Exponential decay rate of the moving
+            average of the gradient.
+        beta_2 (:obj:`float`, optional): Exponential decay rate of the moving
+            average of th.
+        epsilon (:obj:`float`, optional): Constant for numeric stability.
+    
+    Attributes:
+        step (int): Current iteration.
+        moment_1 (np.ndarray): Last 1st moment vector.
+        moment_2 (np.ndarray): Last 2nd moment vector.
+
+    References:
+        ADAM: A Method For Stochastic Optimization
+            Diederik P. Kingma and Jimmy Lei Ba
+            https://arxiv.org/pdf/1412.6980.pdf
+    """
 
     def __init__(self, learning_rate=.001, beta_1=.9, beta_2=.999, epsilon=1e-8):
-        """
-        References
-        ----------
-        ADAM: A Method For Stochastic Optimization
-        Diederik P. Kingma and Jimmy Lei Ba
-        https://arxiv.org/pdf/1412.6980.pdf
-        """
         assert((0 <= beta_1 < 1) and (0 <= beta_2 < 1))
         self.learning_rate = learning_rate
         self.beta_1 = beta_1
@@ -65,6 +103,29 @@ class AdamOptimizer(Optimizer):
 
 
 class LBFGS(Optimizer):
+    """ Quasi-newtonian optimizer with limited memory.
+
+    Args:
+        m (:obj:`int`, optional): Memory size.
+    
+    Attributes:
+        k (int): Current iteration of L-BFGS.
+        previous_grad (np.ndarray): Gradient vector at
+            iteration k-1.
+        y (list): List of m last gradient differences.
+            y_t = grad_{t+1} - grad_t
+        s (list): List of m last update vectors.
+            s_t = H * grad * steplength, where H is the
+            Hessian matrix.
+        alpha (list): List of m last alpha coefficients
+            alpha_i = rho_i * s_i.T * grad,
+            where rho_i = 1. / (s_i.T * y_i).
+    
+    References:
+        Updating Quasi-Newton Matrices with Limited Storage
+            Nocedal, J. (1980)
+            Mathematics of Computation. 35 (151): 773–782
+    """
 
     def __init__(self, m=10):
         self.m = m
@@ -75,14 +136,16 @@ class LBFGS(Optimizer):
         self.alpha = list()
 
     def _update(self, grad):
-        #print(batch_grad.shape)
+        # Two-loop recursion: Only if memory contains a sufficient
+        # number of update vectors
         if self.k >= self.m:
             q = np.copy(grad)
             for s_i, y_i, alpha_i in reversed(list(zip(self.s, self.y, self.alpha))):
                 q -= alpha_i * y_i
 
-            z = self.inner_product(self.y[-1] \
-                / np.dot(self.y[-1], self.y[-1]), self.s[-1], q)
+            # Implicit product between Hessian matrix and gradient vector
+            z = np.repeat(np.dot(self.y[-1] \
+                / np.dot(self.y[-1], self.y[-1]), self.s[-1])) * q
 
             for s_i, y_i, alpha_i in zip(self.s, self.y, self.alpha):
                 rho_i = 1. / np.dot(s_i, y_i)
@@ -112,10 +175,3 @@ class LBFGS(Optimizer):
         self.k += 1
 
         return delta
-
-    def inner_product(self, a, b, c):
-        return np.repeat(np.dot(a, c), len(a)) * b
-    
-    def compute_steplength(self, grad):
-        # print(grad.shape)
-        pass
