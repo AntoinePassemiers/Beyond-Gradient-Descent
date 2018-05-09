@@ -19,6 +19,9 @@ import numpy as np
 from autoencoder import get_trained_autoencoder, mnist
 import bgd
 
+
+COLORS = ['r', 'g', 'b', 'c', 'limegreen', 'y', 'k', 'purple', 'orange', 'pink']
+
 class Window:
     def __init__(self, nn, master=None):
         if master is None:
@@ -38,7 +41,8 @@ class Window:
         if not event.inaxes is self.scatter_ax:
             return
         X = np.asarray([event.xdata, event.ydata])
-        self.imshow_ax.imshow(self.nn.eval(X, start=6).reshape(28, 28), interpolation='nearest')
+        Y = self.nn.eval(X, start=6).reshape(28, 28)
+        self.imshow_ax.imshow(Y, interpolation='nearest')
         self.canvas.draw()
     
     def scatterplot(self, mnist, N=8192):
@@ -50,10 +54,10 @@ class Window:
         dots = self.nn.eval(Xs, stop=6)
         assert dots.shape == (N, 2)
         cmap = matplotlib.cm.autumn
-        for y in np.unique(ys):
-            c = cmap(y/ys.max())
+        for c, y in enumerate(np.unique(ys)):
+            color = COLORS[c]
             self.scatter_ax.plot(dots[ys == y,0], dots[ys == y,1], marker='${:d}$'.format(int(y)),
-                                 mec=c, mfc=c, lw=0)
+                                 color=color, lw=0)
         self.canvas.draw()
     
     def start(self):
