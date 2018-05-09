@@ -163,9 +163,10 @@ class LBFGS(Optimizer):
             Mathematics of Computation. 35 (151): 773–782
     """
 
-    def __init__(self, m=10, first_order_optimizer=AdamOptimizer()):
+    def __init__(self, m=10, epsilon=1e-02, first_order_optimizer=AdamOptimizer()):
         Optimizer.__init__(self)
         self.first_order_optimizer = first_order_optimizer
+        self.epsilon = epsilon
         self.m = m
         self.k = -1
         self.previous_grad = None
@@ -199,34 +200,39 @@ class LBFGS(Optimizer):
 
             # Line search
             c1 = 1e-04
-            steplength = 1.0
+            steplength = 1.
             f_value = F()
             armijo_cnd_satisfied = False
-            while not armijo_cnd_satisfied and steplength > 1e-15:
+            #print(f_value, "---")
+            while (not armijo_cnd_satisfied) and (steplength > 1e-15):
                 delta = steplength * z
                 self.update_layers(delta)
                 f_prime_value = F()
+                #print(f_prime_value)
                 self.update_layers(-delta)
                 armijo_cnd_satisfied = (f_prime_value <= f_value \
                     - c1*steplength*np.dot(grad, z))
                 if not armijo_cnd_satisfied:
                     steplength /= 2.
+            print(steplength, np.mean(np.abs(z)))
         else:
             # Gradient mode
             delta = self.first_order_optimizer._update(grad, F)
 
-        # Update history
         if self.previous_grad is not None:
-            self.y.append(grad - self.previous_grad)
-            self.s.append(delta)
-            rho_i = 1. / np.dot(self.s[-1], self.y[-1])
-            self.alpha.append(rho_i * np.dot(self.s[-1], grad))
-
-            # Ensure history has a length of m
-            if len(self.y) > self.m:
-                self.y = self.y[1:]
-                self.s = self.s[1:]
-                self.alpha = self.alpha[1:]
+            y_k = grad - self.previous_grad
+            s_k = delta
+            if np.dot(y_k, s_k) > self.epsilon * np.sum(s_k ** 2):
+                # Quasi-Newton update
+                self.y.append(y_k)
+                self.s.append(s_k)
+                rho_i = 1. / np.dot(self.s[-1], self.y[-1])
+                self.alpha.append(rho_i * np.dot(self.s[-1], grad))
+                # Ensure history has a length of m
+                if len(self.y) > self.m:
+                    self.y = self.y[1:]
+                    self.s = self.s[1:]
+                    self.alpha = self.alpha[1:]
 
         self.previous_grad = grad
         self.k += 1
