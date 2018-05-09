@@ -56,6 +56,17 @@ class NeuralStack:
             assert len(val_probs) == len(indices)
             nb_correct += (val_probs.argmax(axis=1) == y_val[indices]).sum()
         return 100 * nb_correct / X_val.shape[0]
+    
+    def eval_loss(self, batch_y, predictions, alpha):
+        loss = self.error_op.eval(batch_y, predictions)
+
+        # Apply L2 regularization
+        if alpha > 0:
+            for layer in self.layers:
+                params = layer.get_parameters()
+                if params:
+                    loss += 0.5 * alpha * np.sum(params[0] ** 2)
+        return loss
 
     def train(self, X, y, epochs=1000, batch_size=200, alpha_reg=.0001,
               print_every=50, validation_fraction=0.1):
@@ -89,15 +100,8 @@ class NeuralStack:
                 predictions = self.eval(batch_x)
 
                 # Compute loss function
-                loss = self.error_op.eval(batch_y, predictions)
-
-                # Apply L2 regularization
                 alpha = alpha_reg / self.batch_op.batch_size
-                if alpha > 0:
-                    for layer in self.layers:
-                        params = layer.get_parameters()
-                        if params:
-                            loss += 0.5 * alpha * np.sum(params[0] ** 2)
+                loss = self.eval_loss(batch_y, predictions, alpha_reg)
                 errors.append(loss)
 
                 # Compute gradient of the loss function
@@ -109,7 +113,8 @@ class NeuralStack:
                     signal, gradient = layer.backward(signal, extra_info)
                     if gradient is not None:
                         self.optimizer.add_gradient_fragments(layer, gradient)
-                self.optimizer.optimize()    
+                F = lambda: self.eval_loss(batch_y, predictions, alpha)
+                self.optimizer.update(F)
                 self.optimizer.flush()
 
                 seen_instances += self.batch_op.batch_size

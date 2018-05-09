@@ -9,42 +9,45 @@ import numpy as np
 
 
 class Optimizer(metaclass=ABCMeta):
-    """ Base class for first order and second order optimizers. """
+    """ Base class for first order and second order optimizers.
+
+    Attributes:
+        gradient_fragments (list): List of tuples of NumPy arrays,
+            where the number of tuples is equal to the number of
+            learnable layers in the network.
+    """
 
     def __init__(self):
         self.gradient_fragments = list()
     
     def flush(self):
         self.gradient_fragments = list()
+
+    @abstractmethod
+    def _update(self, grad, F):
+        pass
     
-    def update(self, grad):
+    def update(self, F):
         """ Computes best move in the parameter space at
         current iteration using optimization techniques.
-        Input gradient is temporarily flattened as a vector.
-
-        Args:
-            grad (np.ndarray): Error gradient with respect to
-                the parameters of current layer.
-        
-        Returns:
-            np.ndarray: Array of the same shape as the input,
-                representing the best move in parameter space 
-                (steepest descent or hessian direction)
-                of length determined by the steplength.
+        All gradient fragments added to gradient_fragments
+        are flattened and concatenated to get the batch
+        gradient vector of the whole network.
+        The optimized delta vector is then split into
+        several fragments of original shapes. Finally,
+        those delta fragments are used to update the parameters
+        of each layer, individually.
         """
-        in_shape = grad.shape
-        delta = self._update(grad.flatten(order='C'))
-        return delta.reshape(in_shape, order='C')
-    
-    def optimize(self):
         gradient = list()
         for src_layer, layer_param_shapes, fragments in self.gradient_fragments:
             for fragment in fragments:
                 gradient.append(fragment.flatten(order='C'))
         gradient = np.concatenate(gradient)
 
-        delta = self._update(gradient)
-
+        delta = self._update(gradient, F)
+        self.update_layers(delta)
+    
+    def update_layers(self, delta):
         cursor = 0
         for src_layer, layer_param_shapes, _ in self.gradient_fragments:
             layer_fragments = list()
@@ -54,10 +57,6 @@ class Optimizer(metaclass=ABCMeta):
                 layer_fragments.append(fragment.reshape(fragment_shape, order='C'))
                 cursor += n_elements
             src_layer.update_parameters(tuple(layer_fragments))
-
-    @abstractmethod
-    def _update(self, grad):
-        pass
     
     def add_gradient_fragments(self, src_layer, fragments):
         if not (isinstance(fragments, tuple) or (isinstance(fragments, list))):
@@ -88,7 +87,7 @@ class MomentumOptimizer(Optimizer):
         self.momentum = momentum
         self.previous_grad = None
     
-    def _update(self, grad):
+    def _update(self, grad, F):
         delta = self.learning_rate * grad
         if self.momentum > 0:
             if self.previous_grad is not None:
@@ -129,7 +128,7 @@ class AdamOptimizer(Optimizer):
         self.moment_1 = 0
         self.moment_2 = 0
     
-    def _update(self, grad):
+    def _update(self, grad, F):
         self.step += 1
         self.moment_1 = self.beta_1 * self.moment_1 + (1. - self.beta_1) * grad
         self.moment_2 = self.beta_2 * self.moment_2 + (1. - self.beta_2) * grad ** 2
@@ -164,8 +163,9 @@ class LBFGS(Optimizer):
             Mathematics of Computation. 35 (151): 773–782
     """
 
-    def __init__(self, m=10):
+    def __init__(self, m=10, first_order_optimizer=AdamOptimizer()):
         Optimizer.__init__(self)
+        self.first_order_optimizer = first_order_optimizer
         self.m = m
         self.k = -1
         self.previous_grad = None
@@ -173,7 +173,7 @@ class LBFGS(Optimizer):
         self.s = list()
         self.alpha = list()
 
-    def _update(self, grad):
+    def _update(self, grad, F):
         # Two-loop recursion: Only if memory contains a sufficient
         # number of update vectors
         if self.k >= self.m:
@@ -182,20 +182,35 @@ class LBFGS(Optimizer):
                 q -= alpha_i * y_i
 
             # Implicit product between Hessian matrix and gradient vector
-            z = np.repeat(np.dot(self.y[-1] \
-                / np.dot(self.y[-1], self.y[-1]), self.s[-1])) * q
+            z = np.repeat(
+                np.dot(
+                    self.y[-1] / np.dot(self.y[-1], self.y[-1]),
+                    q),
+                len(self.y[-1])) * self.s[-1]
 
             for s_i, y_i, alpha_i in zip(self.s, self.y, self.alpha):
                 rho_i = 1. / np.dot(s_i, y_i)
                 beta_i = rho_i * np.dot(y_i, z)
                 z += s_i * (alpha_i - beta_i)
-        else:
-            z = grad
 
-        # TODO: LINE SEARCH
-        steplength = self.compute_steplength(grad)
-        steplength = .005
-        delta = steplength * z
+            # Line search
+            c1 = 1e-04
+            steplength = 1.0
+            f_value = F()
+            armijo_cnd_satisfied = False
+            while not armijo_cnd_satisfied:
+                delta = steplength * z
+                self.update_layers(delta)
+                f_prime_value = F()
+                self.update_layers(-delta)
+                armijo_cnd_satisfied = (f_prime_value <= f_value \
+                    - c1*steplength*np.dot(grad, z))
+                if not armijo_cnd_satisfied:
+                    steplength /= 2.
+            print(steplength)
+        else:
+            # Gradient mode
+            delta = self.first_order_optimizer._update(grad, F)
 
         # Update history
         if self.previous_grad is not None:
