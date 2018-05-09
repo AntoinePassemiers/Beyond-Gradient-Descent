@@ -7,7 +7,7 @@ from bgd.errors import Error
 from bgd.layers import Layer, Dropout
 from bgd.errors import MSE, CrossEntropy
 from bgd.optimizers import MomentumOptimizer, Optimizer
-from bgd.utils import log, RequiredComponentError
+from bgd.utils import log, RequiredComponentError, WrongComponentTypeError
 
 import copy
 import numpy as np
@@ -126,16 +126,18 @@ class NeuralStack:
                     else:
                         if validation_fraction > 0:
                             val_preds = self.eval(X_val)
-                            val_mse = self.error_op.eval(batch_y, val_preds)
+                            val_mse = self.error_op.eval(y_val, val_preds)
                         else:
                             val_accuracy = -1
                         log('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation MSE: {3: <15}'.format(
                             epoch, str(batch_id) + ')', loss, val_mse))
         return errors
 
-    def eval(self, X):
-        for layer in self.layers:
-            X = layer.forward(X)
+    def eval(self, X, start=0, stop=-1):
+        if stop == -1 or stop > len(self.layers):
+            stop = len(self.layers) 
+        for i in range(start, stop):
+            X = self.layers[i].forward(X)
         return X
 
     def activate_dropout(self):

@@ -19,38 +19,53 @@ import matplotlib.pyplot as plt
 
 np.seterr(all='raise')
 
+def create_autoencoder():
+    initializer = GaussianInitializer(0, .1)
+    
+    nn = NeuralStack()
+    nn.add(GaussianNoise(.2, clip=(0, 1)))
+    nn.add(FullyConnected(28*28, 50, initializer=initializer))
+    nn.add(Activation(function='tanh'))
+    nn.add(FullyConnected(50, 50, initializer=initializer))
+    nn.add(Activation(function='tanh'))
+    nn.add(FullyConnected(50, 2, initializer=initializer))
+    nn.add(Activation(function='tanh'))
+    nn.add(FullyConnected(2, 50, initializer=initializer))
+    nn.add(Activation(function='tanh'))
+    nn.add(FullyConnected(50, 50, initializer=initializer))
+    nn.add(Activation(function='tanh'))
+    nn.add(FullyConnected(50, 28*28, initializer=initializer))
+    
+    optimizer = AdamOptimizer(learning_rate=.01)
+    nn.add(optimizer)
+    nn.add(MSE())
+    return nn
+
 mnist = fetch_mldata("MNIST original")
 X = mnist.data / 255
 y = np.reshape(mnist.target, (mnist.target.shape[0], 1))
 X_train, X_test, _, _ = train_test_split(X, y, test_size=0.25)
 
-initializer = GaussianInitializer(0, .1)
+def get_trained_autoencoder():
+    try:
+        with open('autoencoder.pickle', 'rb') as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        nn = create_autoencoder()
+        nn.add(SGDBatching(2048))
+        nn.train(X_train, X_train, alpha_reg=0.1, epochs=50, print_every=2048)
+        nn.batch_op = None
+        with open('autoencoder.pickle', 'wb') as f:
+            pickle.dump(nn, f)
+        return nn
 
-nn = NeuralStack()
-nn.add(GaussianNoise(.2, clip=(0, 1)))
-nn.add(FullyConnected(28*28, 50, initializer=initializer))
-nn.add(Activation(function='tanh'))
-nn.add(FullyConnected(50, 50, initializer=initializer))
-nn.add(Activation(function='tanh'))
-nn.add(FullyConnected(50, 2, initializer=initializer))
-nn.add(Activation(function='tanh'))
-nn.add(FullyConnected(2, 50, initializer=initializer))
-nn.add(Activation(function='tanh'))
-nn.add(FullyConnected(50, 50, initializer=initializer))
-nn.add(Activation(function='tanh'))
-nn.add(FullyConnected(50, 28*28, initializer=initializer))
-
-optimizer = AdamOptimizer(learning_rate=.01)
-nn.add(optimizer)
-nn.add(MSE())
-nn.train(X_train, X_train, batch_size=32, alpha_reg=0.001, epochs=6, print_every=10)
-
-f, axarr = plt.subplots(2,2)
-for i in range(2):
-    img = X_train[i].reshape(28, 28)
-    img_prime = nn.eval(img.reshape(1, 28**2)).reshape(28, 28)
-    axarr[i, 0].imshow(img)
-    axarr[i, 1].imshow(img_prime)
-plt.show()
-
-pickle.dump(nn, open('autoencoder.pickle', 'wb'))
+if __name__ == '__main__':
+    f, axarr = plt.subplots(2,2)
+    for i in range(2):
+        img = X_train[i].reshape(28, 28)
+        img_prime = nn.eval(img.reshape(1, 28**2)).reshape(28, 28)
+        axarr[i, 0].imshow(img)
+        axarr[i, 1].imshow(img_prime)
+    plt.show()
+    
+    

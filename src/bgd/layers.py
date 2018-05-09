@@ -313,7 +313,9 @@ class Flatten(Layer):
 class GaussianNoise(Layer):
 
     def __init__(self, stdv, clip=(0, 1), copy=False):
-        Layer.__init__(self, copy=copy)
+        Layer.__init__(self, copy=copy, save_input=False, save_output=False)
+        self.save_input = False
+        self.save_output = False
         self.stdv = stdv
         self.clip = clip
 
