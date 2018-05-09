@@ -202,7 +202,7 @@ class LBFGS(Optimizer):
             steplength = 1.0
             f_value = F()
             armijo_cnd_satisfied = False
-            while not armijo_cnd_satisfied and steplength > 1e-12:
+            while not armijo_cnd_satisfied and steplength > 1e-15:
                 delta = steplength * z
                 self.update_layers(delta)
                 f_prime_value = F()

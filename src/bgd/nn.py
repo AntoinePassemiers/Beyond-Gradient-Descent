@@ -65,7 +65,9 @@ class NeuralStack:
             for layer in self.layers:
                 params = layer.get_parameters()
                 if params:
-                    loss += 0.5 * alpha * np.sum(params[0] ** 2)
+                    squared_params = params[0] ** 2
+                    if not np.isnan(squared_params).any():
+                        loss += 0.5 * alpha * np.sum(squared_params)
         return loss
 
     def train(self, X, y, epochs=1000, batch_size=200, alpha_reg=.0001,

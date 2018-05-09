@@ -6,7 +6,6 @@ from bgd.nn import NeuralStack
 from bgd.batch import SGDBatching
 from bgd.errors import CrossEntropy
 from bgd.layers import FullyConnected, Activation, Flatten, Dropout
-from bgd.initializers import GaussianInitializer, UniformInitializer
 from bgd.optimizers import MomentumOptimizer, AdamOptimizer, LBFGS
 from bgd.utils import log
 
@@ -34,9 +33,7 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=1./7.)
 
     nn = NeuralStack()
-    n_hidden = 64
-    initializer_1 = GaussianInitializer(0, 1./28)
-    initializer_2 = UniformInitializer(0, 1./n_hidden)
+    n_hidden = 256
 
     nn.add(Flatten())
     nn.add(FullyConnected(28*28, n_hidden))
@@ -48,11 +45,13 @@ if __name__ == "__main__":
     nn.add(SGDBatching(512))
 
     adam = AdamOptimizer(learning_rate=0.007)
-    nn.add(adam)
-    #nn.add(LBFGS(m=20, first_order_optimizer=adam))
+    #nn.add(adam)
+    nn.add(LBFGS(m=20, first_order_optimizer=adam))
 
-    nn.train(X_train, y_train, alpha_reg=0.0001, epochs=4, print_every=100)
+    t0 = time()
+    nn.train(X_train, y_train, alpha_reg=0.0001, epochs=6, print_every=100)
     train_acc = accuracy_score(np.squeeze(y_train), nn.eval(X_train).argmax(axis=1))
     test_acc = accuracy_score(np.squeeze(y_test), nn.eval(X_test).argmax(axis=1))
     print("Training accuracy: %f" % train_acc)
     print("Test accuracy: %f" % test_acc)
+    print("Optimization time: %.2f" % (time() - t0))

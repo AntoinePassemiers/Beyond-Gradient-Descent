@@ -40,6 +40,23 @@ class UniformInitializer(Initializer):
         return np.random.uniform(self.min_value, self.max_value, size=shape)
 
 
+class GlorotUniformInitializer(Initializer):
+
+    def __init__(self, seed=None):
+        Initializer.__init__(self, seed=seed)
+
+    def _initialize(self, shape):
+        if isinstance(shape, int):
+            limit = np.sqrt(6. / shape)
+        elif len(shape) == 1:
+            limit = np.sqrt(1. / shape[0])
+        elif len(shape) == 2:
+            limit = np.sqrt(2. / (shape[0] + shape[1]))
+        else:
+            raise NotImplementedError()
+        return np.random.uniform(-limit, limit, size=shape)
+
+
 class GaussianInitializer(Initializer):
 
     def __init__(self, mean, stdv, truncated=False, seed=None):
@@ -53,23 +70,18 @@ class GaussianInitializer(Initializer):
         return np.random.normal(loc=self.mean, scale=self.stdv, size=shape)
 
 
-class XavierInitializer(Initializer):
+class GlorotGaussianInitializer(Initializer):
 
     def __init__(self, seed=None):
-        """
-        References
-        ----------
-        http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization
-        """
         Initializer.__init__(self, seed=seed)
 
     def _initialize(self, shape):
         if isinstance(shape, int):
-            stdv = 1. / shape
+            stdv = np.sqrt(2. / shape)
         elif len(shape) == 1:
-            stdv = 1. / shape[0]
+            stdv = np.sqrt(2. / shape[0])
         elif len(shape) == 2:
-            stdv = 2. / (shape[0] + shape[1])
+            stdv = np.sqrt(2. / (shape[0] + shape[1]))
         else:
             raise NotImplementedError()
         return np.random.normal(loc=0, scale=stdv, size=shape)

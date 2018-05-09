@@ -3,7 +3,7 @@
 # author : Antoine Passemiers, Robin Petit
 
 from bgd.initializers import GaussianInitializer, UniformInitializer
-from bgd.initializers import ZeroInitializer
+from bgd.initializers import ZeroInitializer, GlorotUniformInitializer
 from bgd.operators import *
 
 import copy
@@ -74,7 +74,7 @@ class Layer(metaclass=ABCMeta):
 class FullyConnected(Layer):
 
     def __init__(self, n_in, n_out, copy=False, with_bias=True,
-                 dtype=np.double, initializer=UniformInitializer(),
+                 dtype=np.double, initializer=GlorotUniformInitializer(),
                  bias_initializer=ZeroInitializer()):
         Layer.__init__(self, copy=copy, save_output=False)
         self.with_bias = with_bias
@@ -163,7 +163,7 @@ class Activation(Layer):
 class Convolutional2D(Layer):
 
     def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True,
-                 copy=False, initializer=GaussianInitializer(0, .02),
+                 copy=False, initializer=GlorotUniformInitializer(),
                  bias_initializer=ZeroInitializer(), n_jobs=4):
         Layer.__init__(self, copy=copy, save_output=False)
         self.filter_shape = filter_shape  # [height, width, n_channels]
