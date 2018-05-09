@@ -39,17 +39,17 @@ if __name__ == "__main__":
     initializer_2 = UniformInitializer(0, 1./n_hidden)
 
     nn.add(Flatten())
-    nn.add(FullyConnected(28*28, n_hidden, initializer=initializer_1))
+    nn.add(FullyConnected(28*28, n_hidden))
     nn.add(Activation(function='sigmoid'))
-    nn.add(FullyConnected(n_hidden, 10, initializer=initializer_2))
+    nn.add(FullyConnected(n_hidden, 10))
     nn.add(Activation(function='softmax'))
 
     nn.add(CrossEntropy())
     nn.add(SGDBatching(512))
 
     adam = AdamOptimizer(learning_rate=0.007)
-    #nn.add(adam)
-    nn.add(LBFGS(m=20, first_order_optimizer=adam))
+    nn.add(adam)
+    #nn.add(LBFGS(m=20, first_order_optimizer=adam))
 
     nn.train(X_train, y_train, alpha_reg=0.0001, epochs=4, print_every=100)
     train_acc = accuracy_score(np.squeeze(y_train), nn.eval(X_train).argmax(axis=1))

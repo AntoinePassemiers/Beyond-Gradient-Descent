@@ -21,10 +21,18 @@ class Initializer(metaclass=ABCMeta):
         return np.asarray(self._initialize(shape), dtype=dtype)
 
 
+class ZeroInitializer(Initializer):
+    def __init__(self):
+        Initializer.__init__(self, seed=None)
+    
+    def _initialize(self, shape):
+        return np.zeros(shape)
+
+
 class UniformInitializer(Initializer):
 
-    def __init__(self, min_value, max_value, seed=None):
-        Initializer.__init__(self, seed=None)
+    def __init__(self, min_value=-.05, max_value=.05, seed=None):
+        Initializer.__init__(self, seed=seed)
         self.min_value = min_value
         self.max_value = max_value
     
@@ -35,7 +43,7 @@ class UniformInitializer(Initializer):
 class GaussianInitializer(Initializer):
 
     def __init__(self, mean, stdv, truncated=False, seed=None):
-        Initializer.__init__(self, seed=None)
+        Initializer.__init__(self, seed=seed)
         self.mean = mean
         self.stdv = stdv
         self.truncated = truncated
@@ -53,7 +61,7 @@ class XavierInitializer(Initializer):
         ----------
         http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization
         """
-        Initializer.__init__(self, seed=None)
+        Initializer.__init__(self, seed=seed)
 
     def _initialize(self, shape):
         if isinstance(shape, int):

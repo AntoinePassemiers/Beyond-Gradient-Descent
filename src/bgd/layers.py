@@ -2,7 +2,8 @@
 # layers.py
 # author : Antoine Passemiers, Robin Petit
 
-from bgd.initializers import GaussianInitializer
+from bgd.initializers import GaussianInitializer, UniformInitializer
+from bgd.initializers import ZeroInitializer
 from bgd.operators import *
 
 import copy
@@ -73,16 +74,18 @@ class Layer(metaclass=ABCMeta):
 class FullyConnected(Layer):
 
     def __init__(self, n_in, n_out, copy=False, with_bias=True,
-                 dtype=np.double, initializer=GaussianInitializer(0, .01)):
+                 dtype=np.double, initializer=UniformInitializer(),
+                 bias_initializer=ZeroInitializer()):
         Layer.__init__(self, copy=copy, save_output=False)
         self.with_bias = with_bias
         self.dtype = dtype
         self.n_in = n_in
         self.n_out = n_out
         self.initializer = initializer
+        self.bias_initializer = bias_initializer
         self.weights = self.initializer.initialize((self.n_in, self.n_out), dtype=self.dtype)
         if self.with_bias:
-            self.biases = np.zeros((1, self.n_out), dtype=self.dtype)
+            self.biases = self.bias_initializer.initialize((1, self.n_out), dtype=self.dtype)
         else:
             self.biases = None
 
@@ -160,11 +163,13 @@ class Activation(Layer):
 class Convolutional2D(Layer):
 
     def __init__(self, filter_shape, n_filters, strides=[1, 1], with_bias=True,
-                 copy=False, initializer=GaussianInitializer(0, .02), n_jobs=4):
+                 copy=False, initializer=GaussianInitializer(0, .02),
+                 bias_initializer=ZeroInitializer(), n_jobs=4):
         Layer.__init__(self, copy=copy, save_output=False)
         self.filter_shape = filter_shape  # [height, width, n_channels]
         self.strides = strides
         self.initializer = initializer
+        self.bias_initializer = bias_initializer
         self.with_bias = with_bias
         self.n_filters = n_filters
         assert(len(filter_shape) == 3)
@@ -177,7 +182,7 @@ class Convolutional2D(Layer):
     def init_weights(self, dtype, in_shape):
         filters_shape = tuple([self.n_filters] + list(self.filter_shape))
         self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
-        self.biases = self.initializer.initialize(self.n_filters, dtype=dtype)
+        self.biases = self.bias_initializer.initialize(self.n_filters, dtype=dtype)
 
         out_height = (in_shape[1] - (self.filter_shape[0]-1)) // self.strides[0]
         out_width = (in_shape[2] - (self.filter_shape[1]-1)) // self.strides[1]
