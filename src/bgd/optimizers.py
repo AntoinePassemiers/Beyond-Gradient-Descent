@@ -182,11 +182,15 @@ class LBFGS(Optimizer):
                 q -= alpha_i * y_i
 
             # Implicit product between Hessian matrix and gradient vector
-            z = np.repeat(
-                np.dot(
-                    self.y[-1] / np.dot(self.y[-1], self.y[-1]),
-                    q),
-                len(self.y[-1])) * self.s[-1]
+            den = np.dot(self.y[-1], self.y[-1])
+            if den > 0:
+                z = np.repeat(
+                    np.dot(
+                        self.y[-1] / den,
+                        q),
+                    len(self.y[-1])) * self.s[-1]
+            else:
+                z = np.zeros(len(q))
 
             for s_i, y_i, alpha_i in zip(self.s, self.y, self.alpha):
                 rho_i = 1. / np.dot(s_i, y_i)
@@ -198,7 +202,7 @@ class LBFGS(Optimizer):
             steplength = 1.0
             f_value = F()
             armijo_cnd_satisfied = False
-            while not armijo_cnd_satisfied:
+            while not armijo_cnd_satisfied and steplength > 1e-12:
                 delta = steplength * z
                 self.update_layers(delta)
                 f_prime_value = F()
@@ -207,7 +211,6 @@ class LBFGS(Optimizer):
                     - c1*steplength*np.dot(grad, z))
                 if not armijo_cnd_satisfied:
                     steplength /= 2.
-            print(steplength)
         else:
             # Gradient mode
             delta = self.first_order_optimizer._update(grad, F)

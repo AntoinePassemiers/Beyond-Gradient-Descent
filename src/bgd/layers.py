@@ -124,7 +124,7 @@ class Activation(Layer):
 
     def _forward(self, X):
         if self.function == Activation.SIGMOID:
-            out = 1. / (1. + np.exp(-X))
+            out = 1. / (1. + np.nan_to_num(np.exp(-X)))
         elif self.function == Activation.TANH:
             out = np.tanh(X)
         elif self.function == Activation.RELU:

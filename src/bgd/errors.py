@@ -31,10 +31,19 @@ class MSE(Error):
 
 
 class CrossEntropy(Error):
+    """ Differentiable cross-entropy operator.
+
+    Attributes:
+        epsilon: parameter for numerical stability
+    """
+
+    def __init__(self, epsilon=1e-15):
+        self.epsilon = epsilon
 
     def _eval(self, y, probs):
         indices = np.argmax(y, axis=1).astype(np.int)
-        log_predictions = np.log(probs[np.arange(len(probs)), indices])
+        predictions = probs[np.arange(len(probs)), indices]
+        log_predictions = np.log(np.maximum(predictions, self.epsilon))
         return -np.mean(log_predictions)
 
     def grad(self, y, probs):

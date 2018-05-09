@@ -34,7 +34,7 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=1./7.)
 
     nn = NeuralStack()
-    n_hidden = 200
+    n_hidden = 64
     initializer_1 = GaussianInitializer(0, 1./28)
     initializer_2 = UniformInitializer(0, 1./n_hidden)
 
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     nn.add(CrossEntropy())
     nn.add(SGDBatching(512))
 
-    adam = AdamOptimizer()
+    adam = AdamOptimizer(learning_rate=0.007)
     #nn.add(adam)
     nn.add(LBFGS(m=20, first_order_optimizer=adam))
 
