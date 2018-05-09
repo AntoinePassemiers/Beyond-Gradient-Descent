@@ -16,16 +16,10 @@ class Layer(metaclass=ABCMeta):
         self.copy = copy
         self.current_input = None
         self.current_output = None
-        self.optimizer = None
         self.with_bias = False
         self.save_output = save_output
         self.save_input = save_input
         self.propagate = True
-
-    def set_optimizer(self, optimizer):
-        self.optimizer = optimizer
-        if self.with_bias:
-            self.bias_optimizer = copy.deepcopy(optimizer)
     
     def activate_propagation(self):
         self.propagate = True
@@ -63,8 +57,17 @@ class Layer(metaclass=ABCMeta):
     def backward(self, *args, **kwargs):
         if self.propagate or self.learnable():
             out = self._backward(*args, **kwargs)
-            assert(out.shape == self.input_shape)
+            if not isinstance(out, tuple):
+                out = (out, None)
+            (signal, gradient) = out
+            assert(signal.shape == self.input_shape)
             return out
+        else:
+            return (None, None)
+
+    def update_parameters(self, delta_fragments):
+        raise NonLearnableLayerError(
+            "Cannot update parameters of a %s layer" % self.__class__.__name__)
 
 
 class FullyConnected(Layer):
@@ -91,22 +94,20 @@ class FullyConnected(Layer):
         if extra_info['l2_reg'] > 0:
             gradient_weights += extra_info['l2_reg'] * self.weights # Derivative of L2 regularization term
         gradient_bias = np.sum(error, axis=0, keepdims=True)
+        gradients = (gradient_weights, gradient_bias) if self.with_bias else gradient_weights
         if self.propagate:
             signal = np.dot(error, self.weights.T)
-            self.update(gradient_weights, gradient_bias)
-            return signal
+            return (signal, gradients)
         else:
-            self.update(gradient_weights, gradient_bias)
-
-    def update(self, dW, db):
-        delta = self.optimizer.update(dW)
-        assert(delta.shape == self.weights.shape)
-        self.weights -= delta
-        if self.with_bias:
-            self.biases -= self.bias_optimizer.update(db)
+            return (None, gradients)
 
     def get_parameters(self):
         return (self.weights, self.biases) if self.with_bias else (self.weights,)
+    
+    def update_parameters(self, delta_fragments):
+        self.weights -= delta_fragments[0]
+        if self.with_bias:
+            self.biases -= delta_fragments[1]
 
 
 class Activation(Layer):
@@ -220,19 +221,18 @@ class Convolutional2D(Layer):
         if self.propagate:
             conv_2d_backward(self.error_buffer[:self.n_instances],
                              error.astype(np.float32), self.filters, self.strides, self.n_jobs)
-            self.update(self.in_buffer, db)
-            return self.error_buffer[:self.n_instances, :, :, :]
+            signal = self.error_buffer[:self.n_instances, :, :, :]
+            return (signal, (self.in_buffer, db))
         else:
-            self.update(self.in_buffer, db)
-
-    def update(self, dW, db):
-        dW = self.optimizer.update(dW)
-        self.filters -= dW
-        if self.with_bias:
-            self.biases -= self.bias_optimizer.update(db)
+            return (None, (self.in_buffer, db))
 
     def get_parameters(self):
         return (self.filters, self.biases) if self.with_bias else (self.filters,)
+
+    def update_parameters(self, delta_fragments):
+        self.filters -= delta_fragments[0]
+        if self.with_bias:
+            self.biases -= delta_fragments[1]
 
 
 class MaxPooling2D(Layer):

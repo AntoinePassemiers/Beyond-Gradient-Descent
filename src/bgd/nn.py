@@ -19,13 +19,13 @@ class NeuralStack:
         self.layers = list()
         self.batch_op = None
         self.error_op = None
-        self.base_optimizer = None
+        self.optimizer = None
 
     def add(self, component):
         if isinstance(component, Layer):
             self.layers.append(component)
         elif isinstance(component, Optimizer):
-            self.base_optimizer = component
+            self.optimizer = component
         elif isinstance(component, Error):
             self.error_op = component
         elif isinstance(component, Batching):
@@ -72,10 +72,6 @@ class NeuralStack:
         if isinstance(self.error_op, CrossEntropy):
             y_train = self.binarize_labels(y_train)
 
-        # Create one independent optimizer per layer
-        for layer in self.layers:
-            layer.set_optimizer(copy.deepcopy(self.base_optimizer))
-
         # Deactivate signal propagation though first layer
         self.layers[0].deactivate_propagation()
 
@@ -105,12 +101,16 @@ class NeuralStack:
                 errors.append(loss)
 
                 # Compute gradient of the loss function
-                error = self.error_op.grad(batch_y, predictions)
+                signal = self.error_op.grad(batch_y, predictions)
 
                 # Propagate error through each layer
                 for layer in reversed(self.layers):
                     extra_info = {'l2_reg': alpha}
-                    error = layer.backward(error, extra_info)
+                    signal, gradient = layer.backward(signal, extra_info)
+                    if gradient is not None:
+                        self.optimizer.add_gradient_fragments(layer, gradient)
+                self.optimizer.optimize()    
+                self.optimizer.flush()
 
                 seen_instances += self.batch_op.batch_size
                 if seen_instances % print_every == 0:
@@ -156,7 +156,7 @@ class NeuralStack:
             raise RequiredComponentError(Batching.__name__)
 
         # Check optimizer
-        if self.base_optimizer is None:
+        if self.optimizer is None:
             raise RequiredComponentError(Optimizer.__name__)
 
         # Check loss function

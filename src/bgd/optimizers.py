@@ -3,11 +3,19 @@
 # author : Antoine Passemiers, Robin Petit
 
 from abc import ABCMeta, abstractmethod
+from operator import mul
+from functools import reduce
 import numpy as np
 
 
 class Optimizer(metaclass=ABCMeta):
     """ Base class for first order and second order optimizers. """
+
+    def __init__(self):
+        self.gradient_fragments = list()
+    
+    def flush(self):
+        self.gradient_fragments = list()
     
     def update(self, grad):
         """ Computes best move in the parameter space at
@@ -27,10 +35,37 @@ class Optimizer(metaclass=ABCMeta):
         in_shape = grad.shape
         delta = self._update(grad.flatten(order='C'))
         return delta.reshape(in_shape, order='C')
+    
+    def optimize(self):
+        gradient = list()
+        for src_layer, layer_param_shapes, fragments in self.gradient_fragments:
+            for fragment in fragments:
+                gradient.append(fragment.flatten(order='C'))
+        gradient = np.concatenate(gradient)
+
+        delta = self._update(gradient)
+
+        cursor = 0
+        for src_layer, layer_param_shapes, _ in self.gradient_fragments:
+            layer_fragments = list()
+            for fragment_shape in layer_param_shapes:
+                n_elements = reduce(mul, fragment_shape)
+                fragment = delta[cursor:cursor+n_elements]
+                layer_fragments.append(fragment.reshape(fragment_shape, order='C'))
+                cursor += n_elements
+            src_layer.update_parameters(tuple(layer_fragments))
 
     @abstractmethod
     def _update(self, grad):
         pass
+    
+    def add_gradient_fragments(self, src_layer, fragments):
+        if not (isinstance(fragments, tuple) or (isinstance(fragments, list))):
+            fragments = [fragments]
+        layer_param_shapes = list()
+        for fragment in fragments:
+            layer_param_shapes.append(fragment.shape)
+        self.gradient_fragments.append((src_layer, layer_param_shapes, fragments))
 
 
 class MomentumOptimizer(Optimizer):
@@ -47,6 +82,7 @@ class MomentumOptimizer(Optimizer):
     """
 
     def __init__(self, learning_rate=.005, momentum=.9):
+        Optimizer.__init__(self)
         assert(0 <= momentum <= 1)
         self.learning_rate = learning_rate
         self.momentum = momentum
@@ -83,6 +119,7 @@ class AdamOptimizer(Optimizer):
     """
 
     def __init__(self, learning_rate=.001, beta_1=.9, beta_2=.999, epsilon=1e-8):
+        Optimizer.__init__(self)
         assert((0 <= beta_1 < 1) and (0 <= beta_2 < 1))
         self.learning_rate = learning_rate
         self.beta_1 = beta_1
@@ -128,6 +165,7 @@ class LBFGS(Optimizer):
     """
 
     def __init__(self, m=10):
+        Optimizer.__init__(self)
         self.m = m
         self.k = -1
         self.previous_grad = None
@@ -166,6 +204,7 @@ class LBFGS(Optimizer):
             rho_i = 1. / np.dot(self.s[-1], self.y[-1])
             self.alpha.append(rho_i * np.dot(self.s[-1], grad))
 
+            # Ensure history has a length of m
             if len(self.y) > self.m:
                 self.y = self.y[1:]
                 self.s = self.s[1:]

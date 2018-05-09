@@ -46,9 +46,9 @@ if __name__ == "__main__":
 
     nn.add(CrossEntropy())
     nn.add(SGDBatching(512))
-    #nn.add(AdamOptimizer())
+    nn.add(AdamOptimizer())
     #nn.add(MomentumOptimizer(learning_rate=0.007, momentum=0))
-    nn.add(LBFGS(20))
+    #nn.add(LBFGS(20))
 
     nn.train(X_train, y_train, alpha_reg=0.0001, epochs=4, print_every=100)
     train_acc = accuracy_score(np.squeeze(y_train), nn.eval(X_train).argmax(axis=1))
