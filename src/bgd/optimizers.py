@@ -177,21 +177,23 @@ class LBFGS(Optimizer):
         if self.previous_grad is not None:
             y_k_minus_1 = grad - self.previous_grad
             s_k_minus_1 = self.s[-1]
-            if np.dot(y_k_minus_1, s_k_minus_1) > self.epsilon * np.sum(s_k_minus_1 ** 2) or True:
+            if np.dot(y_k_minus_1, s_k_minus_1) > self.epsilon * np.sum(s_k_minus_1 ** 2) or True: # TODO
                 # Quasi-Newton update
                 self.y.append(y_k_minus_1)
                 rho_k_minus_1 = 1. / np.dot(s_k_minus_1, y_k_minus_1)
-                # Ensure history has a length of m
-                if len(self.y) > self.m:
-                    self.y = self.y[1:]
-                    self.s = self.s[1:]
+            else:
+                self.s = self.s[:-1]
+            # Ensure history has a length of m
+            if len(self.y) > self.m:
+                self.y = self.y[1:]
+                self.s = self.s[1:]
             # Ensure that correction pairs are actually pairs
             assert(len(self.s) == len(self.y))
 
 
         # Two-loop recursion: Only if memory contains a sufficient
         # number of update vectors
-        if self.k >= self.m:
+        if self.k >= self.m and False:
             q = np.copy(grad)
             alpha = list()
             for s_i, y_i in reversed(list(zip(self.s, self.y))):
@@ -212,6 +214,7 @@ class LBFGS(Optimizer):
                 beta_i = rho_i * np.dot(y_i, z)
                 z += s_i * (alpha_i - beta_i)
             # At this point z is now an approximation of np.dot(H_k, grad)
+            # The search direction is p_k = -z
 
             # Line search
             c1 = 1e-04
@@ -227,7 +230,7 @@ class LBFGS(Optimizer):
                     - c1*steplength*np.dot(grad, z))
                 if not armijo_cnd_satisfied:
                     steplength /= 2.
-            print(steplength, np.mean(np.abs(z)))
+            # print(steplength, np.mean(np.abs(z)))
         else:
             # Gradient mode
             delta = self.first_order_optimizer._update(grad, F)

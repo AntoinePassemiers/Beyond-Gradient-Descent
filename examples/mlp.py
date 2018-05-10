@@ -24,8 +24,7 @@ seed(0xCAFE)
 print('')
 
 
-if __name__ == "__main__":
-
+def train_mlp(use_lbfgs=True):
     mnist = fetch_mldata("MNIST original")
     X = (mnist.data / 255 - .5) * 2
     y = np.reshape(mnist.target, (mnist.target.shape[0], 1))
@@ -33,20 +32,30 @@ if __name__ == "__main__":
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=1./7.)
 
     nn = NeuralStack()
-    n_hidden = 256
+    n_hidden = 500
 
-    nn.add(Flatten())
-    nn.add(FullyConnected(28*28, n_hidden))
-    nn.add(Activation(function='sigmoid'))
-    nn.add(FullyConnected(n_hidden, 10))
-    nn.add(Activation(function='softmax'))
 
-    nn.add(CrossEntropy())
-    nn.add(SGDBatching(512))
+    if use_lbfgs:
+        nn.add(Flatten())
+        nn.add(FullyConnected(28*28, n_hidden))
+        nn.add(Activation(function='sigmoid'))
+        nn.add(FullyConnected(n_hidden, 10))
+        nn.add(Activation(function='softmax'))
 
-    adam = AdamOptimizer(learning_rate=0.007)
-    #nn.add(adam)
-    nn.add(LBFGS(m=40, first_order_optimizer=adam))
+        nn.add(CrossEntropy())
+        nn.add(SGDBatching(256))
+        adam = AdamOptimizer(learning_rate=0.007)
+        nn.add(LBFGS(m=30, first_order_optimizer=adam))
+    else:
+        nn.add(Flatten())
+        nn.add(FullyConnected(28*28, n_hidden))
+        nn.add(Activation(function='sigmoid'))
+        nn.add(FullyConnected(n_hidden, 10))
+        nn.add(Activation(function='softmax'))
+
+        nn.add(CrossEntropy())
+        nn.add(SGDBatching(512))
+        nn.add(AdamOptimizer(learning_rate=0.007))
 
     t0 = time()
     nn.train(X_train, y_train, alpha_reg=0.0001, epochs=6, print_every=100)
@@ -55,3 +64,7 @@ if __name__ == "__main__":
     print("Training accuracy: %f" % train_acc)
     print("Test accuracy: %f" % test_acc)
     print("Optimization time: %.2f" % (time() - t0))
+
+
+if __name__ == "__main__":
+    train_mlp(use_lbfgs=True)
