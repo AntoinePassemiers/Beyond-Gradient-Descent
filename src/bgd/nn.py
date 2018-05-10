@@ -115,7 +115,7 @@ class NeuralStack:
                     signal, gradient = layer.backward(signal, extra_info)
                     if gradient is not None:
                         self.optimizer.add_gradient_fragments(layer, gradient)
-                F = lambda: self.eval_loss(batch_y, predictions, alpha)
+                F = lambda: self.eval_loss(batch_y, self.eval(batch_x), alpha)
                 self.optimizer.update(F)
                 self.optimizer.flush()
 

@@ -203,7 +203,6 @@ class LBFGS(Optimizer):
             steplength = 1.
             f_value = F()
             armijo_cnd_satisfied = False
-            #print(f_value, "---")
             while (not armijo_cnd_satisfied) and (steplength > 1e-15):
                 delta = steplength * z
                 self.update_layers(delta)
@@ -215,6 +214,7 @@ class LBFGS(Optimizer):
                 if not armijo_cnd_satisfied:
                     steplength /= 2.
             print(steplength, np.mean(np.abs(z)))
+            #delta = .001 * z if np.mean(np.abs(z)) > 1e-08 else 100000 * z
         else:
             # Gradient mode
             delta = self.first_order_optimizer._update(grad, F)
