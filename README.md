@@ -33,6 +33,10 @@ and using a first-order optimizer enables Stochastic
 Gradient Descent.
 
 ```python
+from bgd.batch import SGDBatching
+from bgd.errors import CrossEntropy
+from bgd.optimizers import AdamOptimizer
+
 nn.add(CrossEntropy())
 nn.add(SGDBatching(512))
 nn.add(AdamOptimizer(learning_rate=0.007))
