@@ -221,16 +221,18 @@ class LBFGS(Optimizer):
             steplength = 1.
             f_value = F()
             armijo_cnd_satisfied = False
+            last_delta = 0
             while (not armijo_cnd_satisfied) and (steplength > 1e-15):
                 delta = steplength * z
-                self.update_layers(delta)
+                self.update_layers(delta - last_delta)
                 f_prime_value = F()
-                self.update_layers(-delta)
+                last_delta = delta
                 armijo_cnd_satisfied = (f_prime_value <= f_value \
                     - c1*steplength*np.dot(grad, z))
                 if not armijo_cnd_satisfied:
                     steplength /= 2.
             # print(steplength, np.mean(np.abs(z)))
+            self.update_layers(-delta)
         else:
             # Gradient mode
             delta = self.first_order_optimizer._update(grad, F)
