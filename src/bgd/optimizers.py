@@ -172,31 +172,46 @@ class LBFGS(Optimizer):
         self.previous_grad = None
         self.y = list()
         self.s = list()
-        self.alpha = list()
 
     def _update(self, grad, F):
+        if self.previous_grad is not None:
+            y_k_minus_1 = grad - self.previous_grad
+            s_k_minus_1 = self.s[-1]
+            if np.dot(y_k_minus_1, s_k_minus_1) > self.epsilon * np.sum(s_k_minus_1 ** 2) or True:
+                # Quasi-Newton update
+                self.y.append(y_k_minus_1)
+                rho_k_minus_1 = 1. / np.dot(s_k_minus_1, y_k_minus_1)
+                # Ensure history has a length of m
+                if len(self.y) > self.m:
+                    self.y = self.y[1:]
+                    self.s = self.s[1:]
+            # Ensure that correction pairs are actually pairs
+            assert(len(self.s) == len(self.y))
+
+
         # Two-loop recursion: Only if memory contains a sufficient
         # number of update vectors
         if self.k >= self.m:
             q = np.copy(grad)
-            for s_i, y_i, alpha_i in reversed(list(zip(self.s, self.y, self.alpha))):
+            alpha = list()
+            for s_i, y_i in reversed(list(zip(self.s, self.y))):
+                rho_i = 1. / np.dot(s_i, y_i)
+                alpha_i = rho_i * np.dot(s_i, q)
                 q -= alpha_i * y_i
+                alpha.append(alpha_i)
 
             # Implicit product between Hessian matrix and gradient vector
             den = np.dot(self.y[-1], self.y[-1])
             if den > 0:
-                z = np.repeat(
-                    np.dot(
-                        self.y[-1] / den,
-                        q),
-                    len(self.y[-1])) * self.s[-1]
+                z = (np.dot(self.y[-1], self.s[-1]) / den) * q
             else:
                 z = np.zeros(len(q))
 
-            for s_i, y_i, alpha_i in zip(self.s, self.y, self.alpha):
+            for s_i, y_i, alpha_i in zip(self.s, self.y, list(reversed(alpha))):
                 rho_i = 1. / np.dot(s_i, y_i)
                 beta_i = rho_i * np.dot(y_i, z)
                 z += s_i * (alpha_i - beta_i)
+            # At this point z is now an approximation of np.dot(H_k, grad)
 
             # Line search
             c1 = 1e-04
@@ -207,33 +222,17 @@ class LBFGS(Optimizer):
                 delta = steplength * z
                 self.update_layers(delta)
                 f_prime_value = F()
-                #print(f_prime_value)
                 self.update_layers(-delta)
                 armijo_cnd_satisfied = (f_prime_value <= f_value \
                     - c1*steplength*np.dot(grad, z))
                 if not armijo_cnd_satisfied:
                     steplength /= 2.
             print(steplength, np.mean(np.abs(z)))
-            #delta = .001 * z if np.mean(np.abs(z)) > 1e-08 else 100000 * z
         else:
             # Gradient mode
             delta = self.first_order_optimizer._update(grad, F)
 
-        if self.previous_grad is not None:
-            y_k = grad - self.previous_grad
-            s_k = delta
-            if np.dot(y_k, s_k) > self.epsilon * np.sum(s_k ** 2):
-                # Quasi-Newton update
-                self.y.append(y_k)
-                self.s.append(s_k)
-                rho_i = 1. / np.dot(self.s[-1], self.y[-1])
-                self.alpha.append(rho_i * np.dot(self.s[-1], grad))
-                # Ensure history has a length of m
-                if len(self.y) > self.m:
-                    self.y = self.y[1:]
-                    self.s = self.s[1:]
-                    self.alpha = self.alpha[1:]
-
+        self.s.append(-delta)
         self.previous_grad = grad
         self.k += 1
 

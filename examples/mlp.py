@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
     adam = AdamOptimizer(learning_rate=0.007)
     #nn.add(adam)
-    nn.add(LBFGS(m=20, first_order_optimizer=adam))
+    nn.add(LBFGS(m=40, first_order_optimizer=adam))
 
     t0 = time()
     nn.train(X_train, y_train, alpha_reg=0.0001, epochs=6, print_every=100)
