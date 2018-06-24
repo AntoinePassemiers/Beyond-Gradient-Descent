@@ -7,21 +7,43 @@ import numpy as np
 
 
 class Initializer(metaclass=ABCMeta):
+    """ Base class for all initializers.
+    
+    Args:
+        seed (int):
+            Seed for the random number generator
+    """
 
     def __init__(self, seed=None):
         self.seed = seed
     
-    @abstractmethod
-    def _initialize(self, shape):
-        pass
-    
     def initialize(self, shape, dtype=np.float32):
+        """ Return array with random values. The distribution
+        of the values is defined in subclasses.
+
+        Args:
+            shape (tuple):
+                Shape of the array to be initialized
+            dtype (np.dtype):
+                Data type of the array to be initialized
+        """
         if self.seed:
             np.random.seed(self.seed)
         return np.asarray(self._initialize(shape), dtype=dtype)
 
+    @abstractmethod
+    def _initialize(self, shape):
+        pass
+
 
 class ZeroInitializer(Initializer):
+    """ Initializer for generating arrays of zeroes.
+
+    Args:
+        seed (int):
+            Seed for the random number generator
+    """
+
     def __init__(self):
         Initializer.__init__(self, seed=None)
     
@@ -30,6 +52,16 @@ class ZeroInitializer(Initializer):
 
 
 class UniformInitializer(Initializer):
+    """ Initializer for generating arrays using a uniform distribution.
+
+    Args:
+        min_value (float):
+            Lower bound of the uniform distribution
+        max_value (float):
+            Upper bound of the uniform distribution
+        seed (int):
+            Seed for the random number generator
+    """
 
     def __init__(self, min_value=-.05, max_value=.05, seed=None):
         Initializer.__init__(self, seed=seed)
@@ -41,6 +73,13 @@ class UniformInitializer(Initializer):
 
 
 class GlorotUniformInitializer(Initializer):
+    """ Initializer for generating arrays using a 
+    Glorot uniform distribution.
+
+    Args:
+        seed (int):
+            Seed for the random number generator
+    """
 
     def __init__(self, seed=None):
         Initializer.__init__(self, seed=seed)
@@ -58,6 +97,19 @@ class GlorotUniformInitializer(Initializer):
 
 
 class GaussianInitializer(Initializer):
+    """ Initializer for generating arrays using a 
+    Gaussian distribution.
+
+    Args:
+        mean (float):
+            Mean of the Gaussian distribution
+        stdv (float):
+            Standard deviation of the Gaussian distribution
+        truncated (bool):
+            Whether to truncate the sampled values
+        seed (int):
+            Seed for the random number generator
+    """
 
     def __init__(self, mean, stdv, truncated=False, seed=None):
         Initializer.__init__(self, seed=seed)
@@ -71,6 +123,13 @@ class GaussianInitializer(Initializer):
 
 
 class GlorotGaussianInitializer(Initializer):
+    """ Initializer for generating arrays using a 
+    Glorot Gaussian distribution.
+
+    Args:
+        seed (int):
+            Seed for the random number generator
+    """
 
     def __init__(self, seed=None):
         Initializer.__init__(self, seed=seed)

@@ -14,6 +14,25 @@ import numpy as np
 
 
 class NeuralStack:
+    """ Sequential model that can be viewed as a stack of layers.
+    Backpropagation is simplified because the error gradient
+    with respect to the parameters of any layer is the gradient
+    of a composition of functions (defined by all successor layers)
+    and is decomposed using the chain rule.
+
+    Attributes:
+        layers (list):
+            List of layers, where layers[0] is the input layer and
+            layers[-1] is the output layer.
+        batch_op (Batching):
+            Batching method to use in order to perform one step of the
+            backpropagation algorithm.
+        error_op (Error):
+            Error metric to use in order to evaluate model performance.
+        optimizer (Optimizer):
+            Optimizer to use in order to update the parameters of the
+            model during backpropagation.
+    """
 
     def __init__(self):
         self.layers = list()
@@ -22,13 +41,29 @@ class NeuralStack:
         self.optimizer = None
 
     def add(self, component):
+        """ Add a component to the model: it can be either a layer
+        or a special component like an optimizer. Some components
+        are mandatory to train the model. The architecture of the
+        model is defined by the layers that are provided to this
+        method. Thus, the order is taken into account when adding
+        layers. However, the order has no importance when adding
+        special components like optimizers, error metrics, etc.
+
+        Args:
+            component (object):
+                Component to add to the model (Layer or special component).
+        """
         if isinstance(component, Layer):
+            # Add a layer to the neural stack
             self.layers.append(component)
         elif isinstance(component, Optimizer):
+            # Set the optimizer
             self.optimizer = component
         elif isinstance(component, Error):
+            # Set the error metric
             self.error_op = component
         elif isinstance(component, Batching):
+            # Set the batching algorithm
             self.batch_op = component
         else:
             raise WrongComponentTypeError("Unknown component type")

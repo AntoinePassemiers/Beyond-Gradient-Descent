@@ -5,6 +5,8 @@
 *.pickle
 .*
 
+*.pptx
+
 bgd.egg-info/
 dist/
 build/
