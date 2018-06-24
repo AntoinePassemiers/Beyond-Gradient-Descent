@@ -48,7 +48,7 @@ class Layer(metaclass=ABCMeta):
         self.save_output = save_output
         self.save_input = save_input
         self.propagate = True
-    
+
     def activate_propagation(self):
         """ Activate signal propagation during backpropagation. """
         self.propagate = True
@@ -56,7 +56,7 @@ class Layer(metaclass=ABCMeta):
     def deactivate_propagation(self):
         """ Deactivate signal propagation during backpropagation. """
         self.propagate = False
-    
+
     def learnable(self):
         """ Tells whether the layer has learnable parameters. """
         parameters = self.get_parameters()
@@ -183,7 +183,7 @@ class FullyConnected(Layer):
 
     def get_parameters(self):
         return (self.weights, self.biases) if self.with_bias else (self.weights,)
-    
+
     def update_parameters(self, delta_fragments):
         self.weights -= delta_fragments[0]
         if self.with_bias:
@@ -285,7 +285,7 @@ class Convolutional2D(Layer):
         G2 = np.copy(self.out_buffer)
         print("Forward - similarity between regular version and SSE version: %f" \
             % (np.isclose(G, G2).sum() / float(G.size)))
-        
+
         self.n_instances = X.shape[0]
         return self.out_buffer[:X.shape[0], :, :, :]
 
@@ -385,7 +385,7 @@ class GaussianNoise(Layer):
         self.clip = clip
 
     def _forward(self, X):
-        noised_X = X + np.random.normal(self.mean, self.stdv)
+        noised_X = X + np.random.normal(self.mean, self.stdv, size=X.shape)
         if self.clip:
             noised_X = np.clip(noised_X, self.clip[0], self.clip[1])
         return noised_X
