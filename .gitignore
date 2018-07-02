@@ -1,5 +1,6 @@
 *.pyc
 *.pyd
+*.npy
 *.o
 *.c
 *.pickle
@@ -11,3 +12,4 @@ bgd.egg-info/
 dist/
 build/
 __pycache__/
+doc/build/

@@ -19,14 +19,14 @@ class Optimizer(metaclass=ABCMeta):
 
     def __init__(self):
         self.gradient_fragments = list()
-    
+
     def flush(self):
         self.gradient_fragments = list()
 
     @abstractmethod
     def _update(self, grad, F):
         pass
-    
+
     def update(self, F):
         """ Computes best move in the parameter space at
         current iteration using optimization techniques.
@@ -46,7 +46,7 @@ class Optimizer(metaclass=ABCMeta):
 
         delta = self._update(gradient, F)
         self.update_layers(delta)
-    
+
     def update_layers(self, delta):
         cursor = 0
         for src_layer, layer_param_shapes, _ in self.gradient_fragments:
@@ -57,7 +57,7 @@ class Optimizer(metaclass=ABCMeta):
                 layer_fragments.append(fragment.reshape(fragment_shape, order='C'))
                 cursor += n_elements
             src_layer.update_parameters(tuple(layer_fragments))
-    
+
     def add_gradient_fragments(self, src_layer, fragments):
         if not (isinstance(fragments, tuple) or (isinstance(fragments, list))):
             fragments = [fragments]
@@ -69,13 +69,15 @@ class Optimizer(metaclass=ABCMeta):
 
 class MomentumOptimizer(Optimizer):
     """ Simple first order optimizer with momentum support.
-    
+
     Args:
-        learning_rate (:obj:`float`, optional): Constant steplength.
-        momentum (:obj:`float`, optional): Persistence of previous
+        learning_rate (:obj:`float`, optional):
+            Constant steplength.
+        momentum (:obj:`float`, optional):
+            Persistence of previous
             gradient vectors. Old vectors are re-used to compute the
             new search direction, with respect to the momentum value.
-    
+
     Attributes:
         previous_grad (np.ndarray): Gradient vector at previous iteration.
     """
@@ -86,7 +88,7 @@ class MomentumOptimizer(Optimizer):
         self.learning_rate = learning_rate
         self.momentum = momentum
         self.previous_grad = None
-    
+
     def _update(self, grad, F):
         delta = self.learning_rate * grad
         if self.momentum > 0:
@@ -99,13 +101,15 @@ class MomentumOptimizer(Optimizer):
 class AdamOptimizer(Optimizer):
     """
     Args:
-        learning_rate (:obj:`float`, optional): Constant steplength.
-        beta_1 (:obj:`float`, optional): Exponential decay rate of the moving
-            average of the gradient.
-        beta_2 (:obj:`float`, optional): Exponential decay rate of the moving
-            average of th.
-        epsilon (:obj:`float`, optional): Constant for numeric stability.
-    
+        learning_rate (:obj:`float`, optional):
+            Constant steplength.
+        beta_1 (:obj:`float`, optional):
+            Exponential decay rate of the moving average of the gradient.
+        beta_2 (:obj:`float`, optional):
+            Exponential decay rate of the moving average of th.
+        epsilon (:obj:`float`, optional):
+            Constant for numeric stability.
+
     Attributes:
         step (int): Current iteration.
         moment_1 (np.ndarray): Last 1st moment vector.
@@ -127,7 +131,7 @@ class AdamOptimizer(Optimizer):
         self.step = 0
         self.moment_1 = 0
         self.moment_2 = 0
-    
+
     def _update(self, grad, F):
         self.step += 1
         self.moment_1 = self.beta_1 * self.moment_1 + (1. - self.beta_1) * grad
@@ -143,20 +147,24 @@ class LBFGS(Optimizer):
 
     Args:
         m (:obj:`int`, optional): Memory size.
-    
+
     Attributes:
-        k (int): Current iteration of L-BFGS.
-        previous_grad (np.ndarray): Gradient vector at
+        k (int):
+            Current iteration of L-BFGS.
+            previous_grad (np.ndarray): Gradient vector at
             iteration k-1.
-        y (list): List of m last gradient differences.
+        y (list):
+            List of m last gradient differences.
             y_t = grad_{t+1} - grad_t
-        s (list): List of m last update vectors.
+        s (list):
+            List of m last update vectors.
             s_t = H * grad * steplength, where H is the
             Hessian matrix.
-        alpha (list): List of m last alpha coefficients
+        alpha (list):
+            List of m last alpha coefficients
             alpha_i = rho_i * s_i.T * grad,
             where rho_i = 1. / (s_i.T * y_i).
-    
+
     References:
         Updating Quasi-Newton Matrices with Limited Storage
             Nocedal, J. (1980)

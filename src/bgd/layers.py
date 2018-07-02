@@ -25,7 +25,7 @@ class Layer(metaclass=ABCMeta):
             Whether to keep a reference to the input array
         save_output (bool):
             Whether to keep a reference to the output array
-    
+
     Attributes:
         input_shape (tuple):
             Shape of the input array
@@ -70,12 +70,12 @@ class Layer(metaclass=ABCMeta):
             delta_fragments (tuple):
                 Tuple of NumPy arrays. Each array is a parameter update vector
                 and is used to update parameters using the following formula:
-                    params = params - delta_fragment.
+                params = params - delta_fragment.
                 The tuple can have a size > 1 for convenience. For example,
                 a convolutional neural layer has one array to update the filters
                 weights and one array to update the biases:
-                    weights = weights - delta_fragments[0]
-                    biases  = biases  - delta_fragments[1]
+                weights = weights - delta_fragments[0]
+                biases  = biases  - delta_fragments[1]
         """
         raise NonLearnableLayerError(
             "Cannot update parameters of a %s layer" % self.__class__.__name__)
@@ -95,7 +95,7 @@ class Layer(metaclass=ABCMeta):
         if self.save_output: # Save output if needed
             self.current_output = current_output
             # If needed and if the output does not produce
-            # a copy of the inpt , then the output is copied.
+            # a copy of the input , then the output is copied.
             if self.copy and np.may_share_memory(
                     X, current_output, np.core.multiarray.MAY_SHARE_BOUNDS):
                 self.current_output = np.copy(current_output)
@@ -108,14 +108,14 @@ class Layer(metaclass=ABCMeta):
 
         Returns a tuple of size 2 where first element is the signal to
         propagate and the second element is the error gradient with respect
-        to the parameters of the layer. If propagation is deactivated 
+        to the parameters of the layer. If propagation is deactivated
         for current layer, then the signal is replaced by None.
         If layer is non-learnable, the gradient is replaced by None.
         """
         if self.propagate or self.learnable():
             out = self._backward(*args, **kwargs)
             if not isinstance(out, tuple):
-                # If wraped method does not return a gradient vector,
+                # If wrapped method does not return a gradient vector,
                 # then replace it by None
                 out = (out, None)
             (signal, gradient) = out
@@ -148,6 +148,31 @@ class Layer(metaclass=ABCMeta):
 
 
 class FullyConnected(Layer):
+    """ Fully connected (dense) neural layer. Each output neuron is a
+    weighted sum of its inputs with possibly a bias.
+
+    Args:
+        n_in (int):
+            Number of input neurons
+        n_out (int):
+            Number of output neurons
+        copy (bool):
+            Whether to copy layer output
+        with_bias (bool):
+            Whether add a bias to output neurons
+        dtype (type):
+            Type of weights and biases
+        initializer (bgd.initializers.Initializer):
+            Initializer of the weights
+        bias_initializer (bgd.initializers.Initializer):
+            Initializer of the biases
+
+    Attributes:
+        weights (np.ndarray):
+            matrix of weights
+        biases (np.ndarray):
+            vector of biases
+    """
 
     def __init__(self, n_in, n_out, copy=False, with_bias=True,
                  dtype=np.double, initializer=GlorotUniformInitializer(),
