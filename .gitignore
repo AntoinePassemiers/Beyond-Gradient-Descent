@@ -1,15 +1,29 @@
+### Source & Compiled files
+
 *.pyc
 *.pyd
-*.npy
+*.so
 *.o
 *.c
+
+### Storage files
+
 *.pickle
+*.npy
+
+### Temporary files
+
 .*
+
+### Build directories
+
+dist/
+build/
+doc/build/
+__pycache__/
+bgd.egg-info/
+
+### Misc
 
 *.pptx
 
-bgd.egg-info/
-dist/
-build/
-__pycache__/
-doc/build/
