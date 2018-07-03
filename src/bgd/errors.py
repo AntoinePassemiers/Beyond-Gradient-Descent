@@ -10,25 +10,36 @@ class Error(metaclass=ABCMeta):
     """ Base class for error operators.
 
     Args:
-        X (np.ndarray):
-            Array of shape (n_samples, output_size) representing
-            the predictions. Must have same length as Y.
-        Y (np.ndarray):
+        y (:obj:`np.ndarray`):
             Array of shape (n_samples, output_size) representing
             the expected outputs. Must have same length as X.
+        y_hat (:obj:`np.ndarray`):
+            Array of shape (n_samples, output_size) representing
+            the predictions. Must have same length as Y.
     """
 
     def eval(self, y, y_hat):
         """ Evaluates the error operator and returns an array of
         shape (n_samples,) with the per-sample cost.
+
+        Returns:
+            (:obj:`np.ndarray`):
+                loss:
+                    The error function value for each sample
+                    of the batch. `shape == (len(y),)`
         """
         assert len(y) == len(y_hat)
         return self._eval(y, y_hat)
 
     def grad(self, y, y_hat):
         """ Evaluates the gradient of the error. The error must be
-        inconditional to the model parameters. In other words, the
-        error is non-parametric.
+        not depend on to the model parameters.
+
+        Returns:
+            (:obj:`np.ndarray`):
+                grad:
+                    The gradient of the error for each sample
+                    of the batch. `shape == (len(y),)`
         """
         assert len(y) == len(y_hat)
         return self._grad(y, y_hat)
@@ -53,17 +64,33 @@ class MSE(Error):
         """ Return mean squared error.
 
         Args:
-            y (np.ndarray): ground truth values
-            y_hat (np.ndarray): predicted values
+            y (:obj:`np.ndarray`):
+                Ground truth values.
+            y_hat (:obj:`np.ndarray`):
+                Predicted values.
+
+        Returns:
+            (:obj:`np.ndarray`):
+                loss:
+                    The error function value for each sample
+                    of the batch. `shape == (len(y),)`
         """
-        return np.mean(.5 * (y_hat - y) ** 2)
+        return .5 * np.mean((y_hat - y) ** 2)
 
     def _grad(self, y, y_hat):
-        """ Return derivative of mean squared error.
+        """ Returns the derivative of mean squared error.
 
         Args:
-            y (np.ndarray): ground truth values
-            y_hat (np.ndarray): predicted values
+            y (:obj:`np.ndarray`):
+                Ground truth values.
+            y_hat (:obj:`np.ndarray`):
+                Predicted values.
+
+        Returns:
+            (:obj:`np.ndarray`):
+                grad:
+                    The gradient of the error for each sample
+                    of the batch. `shape == (len(y),)`
         """
         return y_hat - y
 
@@ -82,8 +109,16 @@ class CrossEntropy(Error):
         """ Return cross-entropy metric.
 
         Args:
-            y (np.ndarray): ground truth labels
-            y_hat (np.ndarray): predicted values
+            y (:obj:`np.ndarray`):
+                Ground truth labels.
+            y_hat (:obj:`np.ndarray`):
+                Predicted values.
+
+        Returns:
+            (:obj:`np.ndarray`):
+                loss:
+                    The error function value for each sample
+                    of the batch. `shape == (len(y),)`
         """
         indices = np.argmax(y, axis=1).astype(np.int)
         predictions = y_hat[np.arange(len(y_hat)), indices]
@@ -94,7 +129,15 @@ class CrossEntropy(Error):
         """ Return derivative of cross-entropy function.
 
         Args:
-            y (np.ndarray): ground truth labels
-            y_hat (np.ndarray): predicted values
+            y (:obj:`np.ndarray`):
+                Ground truth labels.
+            y_hat (:obj:`np.ndarray`):
+                Predicted values.
+
+        Returns:
+            (:obj:`np.ndarray`):
+                grad:
+                    The gradient of the error for each sample
+                    of the batch. `shape == (len(y),)`
         """
         return y_hat - y

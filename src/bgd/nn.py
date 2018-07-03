@@ -51,6 +51,41 @@ def split_train_val(X, y, validation_fraction):
     X, y = X[indices], np.squeeze(y[indices])
     return X[:split], y[:split], X[split:], y[split:]
 
+def binarize_labels(y):
+    """ Transforms a N-valued vector of labels into a binary vector.
+    If N classes are present, they *must* be 0 to N-1.
+
+    Args:
+        y (:obj:`np.ndarray`):
+            Vector of classes.
+
+    Returns:
+        (:obj:`np.ndarray`):
+            binary_y:
+                Binary matrix of shape (n_instances, n_classes)
+                s.t. `binary_y[i,j] == 1` iff `y[i] == j`.
+
+    Example:
+        >>> y = np.array([0, 1, 0, 0, 1, 1, 0])
+        >>> binarize_labels(y)
+        array([[1, 0],
+               [0, 1],
+               [1, 0],
+               [1, 0],
+               [0, 1],
+               [0, 1],
+               [1, 0]])
+    """
+    unique_values = np.unique(y)
+    n_classes = len(unique_values)
+    if set(unique_values) != set(np.arange(n_classes)):
+        raise ValueError('The {} classes must be encoded 0 to {}' \
+                         .format(n_classes, n_classes-1))
+    binary_y = np.zeros((len(y), n_classes), dtype=np.int)
+    for c in range(n_classes):
+        binary_y[:, c] = (y == c)
+    return binary_y
+
 
 class NeuralStack:
     """ Sequential model that can be viewed as a stack of layers.
@@ -110,42 +145,6 @@ class NeuralStack:
             self.batch_op = component
         else:
             raise WrongComponentTypeError("Unknown component type")
-
-    def binarize_labels(self, y):
-        """ Transforms a N-valued vector of labels into a binary vector.
-        If N classes are present, they *must* be 0 to N-1.
-
-        Args:
-            y (:obj:`np.ndarray`):
-                Vector of classes.
-
-        Returns:
-            (:obj:`np.ndarray`):
-                binary_y:
-                    Binary matrix of shape (n_instances, n_classes)
-                    s.t. `binary_y[i,j] == 1` iff `y[i] == j`.
-
-        Example:
-            >>> nn = NeuralStack()
-            >>> y = np.array([0, 1, 0, 0, 1, 1, 0])
-            >>> nn.binarize_labels(y)
-            array([[1, 0],
-                   [0, 1],
-                   [1, 0],
-                   [1, 0],
-                   [0, 1],
-                   [0, 1],
-                   [1, 0]])
-        """
-        unique_values = np.unique(y)
-        n_classes = len(unique_values)
-        if set(unique_values) != set(np.arange(n_classes)):
-            raise ValueError('The {} classes must be encoded 0 to {}' \
-                             .format(n_classes, n_classes-1))
-        binary_y = np.zeros((len(y), n_classes), dtype=np.int)
-        for c in range(n_classes):
-            binary_y[:, c] = (y == c)
-        return binary_y
 
     def get_accuracy(self, X_val, y_val, batch_size=256):
         """ Returns the percentage of samples correctly labeled by the model.
@@ -244,16 +243,16 @@ class NeuralStack:
             >>> nn.add(AdamOptimizer())
             >>> nn.add(SGDBatching(512))
             >>> errors = nn.train(X, y)
-            [2018-07-03 17:01:11.444068]    Loss at epoch 93 (batch 1)       : 0.4746132147046453   - Validation accuracy: 95.0
-            [2018-07-03 17:01:12.155415]    Loss at epoch 187 (batch 1)       : 0.31422001176102426  - Validation accuracy: 96.7
-            [2018-07-03 17:01:12.899374]    Loss at epoch 281 (batch 1)       : 0.2320271116849095   - Validation accuracy: 95.6
-            [2018-07-03 17:01:13.711848]    Loss at epoch 374 (batch 1)       : 0.2071083076653019   - Validation accuracy: 96.1
-            [2018-07-03 17:01:14.443615]    Loss at epoch 468 (batch 1)       : 0.19040431125095156  - Validation accuracy: 95.6
-            [2018-07-03 17:01:15.161749]    Loss at epoch 562 (batch 1)       : 0.170319350663334    - Validation accuracy: 96.1
-            [2018-07-03 17:01:15.876878]    Loss at epoch 656 (batch 1)       : 0.1645264159422448   - Validation accuracy: 95.0
-            [2018-07-03 17:01:16.632598]    Loss at epoch 749 (batch 1)       : 0.1481725308805749   - Validation accuracy: 95.6
-            [2018-07-03 17:01:17.331990]    Loss at epoch 843 (batch 1)       : 0.1347951182675034   - Validation accuracy: 95.0
-            [2018-07-03 17:01:18.047874]    Loss at epoch 937 (batch 1)       : 0.12705829279032987  - Validation accuracy: 95.0
+            Loss at epoch 93 (batch 1)       : 0.4746132147046453   - Validation accuracy: 95.0
+            Loss at epoch 187 (batch 1)       : 0.31422001176102426  - Validation accuracy: 96.7
+            Loss at epoch 281 (batch 1)       : 0.2320271116849095   - Validation accuracy: 95.6
+            Loss at epoch 374 (batch 1)       : 0.2071083076653019   - Validation accuracy: 96.1
+            Loss at epoch 468 (batch 1)       : 0.19040431125095156  - Validation accuracy: 95.6
+            Loss at epoch 562 (batch 1)       : 0.170319350663334    - Validation accuracy: 96.1
+            Loss at epoch 656 (batch 1)       : 0.1645264159422448   - Validation accuracy: 95.0
+            Loss at epoch 749 (batch 1)       : 0.1481725308805749   - Validation accuracy: 95.6
+            Loss at epoch 843 (batch 1)       : 0.1347951182675034   - Validation accuracy: 95.0
+            Loss at epoch 937 (batch 1)       : 0.12705829279032987  - Validation accuracy: 95.0
             >>> print('Errors:', errors)
             Errors: [ 2.50539121  2.28391007  2.40779468 ...,  0.11655055  0.12436938  0.09155006]
         """
@@ -267,7 +266,7 @@ class NeuralStack:
 
         # Binarize labels if classification task
         if isinstance(self.error_op, CrossEntropy):
-            y_train = self.binarize_labels(y_train)
+            y_train = binarize_labels(y_train)
 
         # Deactivate signal propagation though first layer
         self.layers[0].deactivate_propagation()

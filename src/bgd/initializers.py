@@ -11,7 +11,7 @@ class Initializer(metaclass=ABCMeta):
 
     Args:
         seed (int):
-            Seed for the random number generator
+            Seed for the random number generator.
     """
 
     def __init__(self, seed=None):
@@ -23,9 +23,13 @@ class Initializer(metaclass=ABCMeta):
 
         Args:
             shape (tuple):
-                Shape of the array to be initialized
+                Shape of the array to be initialized.
             dtype (np.dtype):
-                Data type of the array to be initialized
+                Data type of the array to be initialized.
+
+        Returns:
+            (:obj:`np.ndarray`):
+                An array of provided shape initialized accordingly.
         """
         if self.seed:
             np.random.seed(self.seed)
@@ -41,7 +45,7 @@ class ZeroInitializer(Initializer):
 
     Args:
         seed (int):
-            Seed for the random number generator
+            Seed for the random number generator.
     """
 
     def __init__(self):
@@ -56,11 +60,11 @@ class UniformInitializer(Initializer):
 
     Args:
         min_value (float):
-            Lower bound of the uniform distribution
+            Lower bound of the uniform distribution.
         max_value (float):
-            Upper bound of the uniform distribution
+            Upper bound of the uniform distribution.
         seed (int):
-            Seed for the random number generator
+            Seed for the random number generator.
     """
 
     def __init__(self, min_value=-.05, max_value=.05, seed=None):
@@ -78,7 +82,7 @@ class GlorotUniformInitializer(Initializer):
 
     Args:
         seed (int):
-            Seed for the random number generator
+            Seed for the random number generator.
     """
 
     def __init__(self, seed=None):
@@ -102,13 +106,13 @@ class GaussianInitializer(Initializer):
 
     Args:
         mean (float):
-            Mean of the Gaussian distribution
+            Mean of the Gaussian distribution.
         stdv (float):
-            Standard deviation of the Gaussian distribution
+            Standard deviation of the Gaussian distribution.
         truncated (bool):
-            Whether to truncate the sampled values
+            Whether to truncate the sampled values.
         seed (int):
-            Seed for the random number generator
+            Seed for the random number generator.
     """
 
     def __init__(self, mean, stdv, truncated=False, seed=None):

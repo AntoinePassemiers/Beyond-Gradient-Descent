@@ -22,18 +22,26 @@ class Batching(metaclass=ABCMeta):
     def start(self, X, y):
         """ Wrapper method for providing a dataset
         to the batching algorithm.
-        This is required before to call method 'next'.
+        This *must* be called before to method :meth:`next` is called.
 
         Args:
-            X (np.ndarray): Input samples
-            y (np.ndarray): Target values
+            X (:obj:`np.ndarray`): Input samples
+            y (:obj:`np.ndarray`): Target values
         """
         self._start(X, y)
         self.warm = True
 
     def next(self):
         """ Wrapper method for retrieving a batch from
-        the provided dataset. """
+        the provided dataset.
+
+        Returns:
+            (:obj:`tuple`):
+                X (:obj:`np.ndarray`):
+                    Batch samples.
+                y (:obj:`np.ndarray`):
+                    Batch target values.
+        """
         assert self.warm
         return self._next()
 
@@ -57,10 +65,10 @@ class SGDBatching(Batching):
 
     Args:
         batch_size (int):
-            Size of each random batch
+            Size of each random batch.
         shuffle (bool):
-            Whether to shuffle the dataset before to
-            extrct a batch from it
+            Whether to shuffle the dataset before
+            extracting a batch from it.
     """
 
     def __init__(self, batch_size, shuffle=True):
@@ -71,25 +79,40 @@ class SGDBatching(Batching):
 
     def _start(self, X, y):
         """ Provide a dataset to the batching algorithm.
-        This is required before to call method 'next'.
+        This *must* be called before to method :meth:`next` is called.
 
         Args:
-            X (np.ndarray): Input samples
-            y (np.ndarray): Target values
+            X (:obj:`np.ndarray`): Input samples.
+            y (:obj:`np.ndarray`): Target values.
         """
         self.batch_size = min(len(X), self.batch_size)
         self.batches = self.mini_batches(X, y)
 
     def _next(self):
-        """ Retrieve next batch using a generator function. """
+        """ Retrieves next batch using a generator function.
+
+        Returns:
+            (:obj:`tuple`):
+                X (:obj:`np.ndarray`):
+                    Batch samples.
+                y (:obj:`np.ndarray`):
+                    Batch target values.
+        """
         return next(self.batches)
 
     def mini_batches(self, X, y):
-        """ Generator function that iteratively yielding batches.
+        """ Generator function that iteratively yields batches.
 
         Args:
-            X (np.ndarray): Input samples
-            y (np.ndarray): Target values
+            X (:obj:`np.ndarray`): Input samples.
+            y (:obj:`np.ndarray`): Target values.
+
+        Yields:
+            (:obj:`tuple`):
+                X (:obj:`np.ndarray`):
+                    Batch samples.
+                y (:obj:`np.ndarray`):
+                    Batch target values.
         """
         indices = np.arange(0, len(X), self.batch_size)
         if self.shuffle: # If shuffled dataset

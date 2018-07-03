@@ -2,13 +2,15 @@
 # layers.py
 # author : Antoine Passemiers, Robin Petit
 
-import copy
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
 from bgd.initializers import ZeroInitializer, GlorotUniformInitializer
 from bgd.utils import NonLearnableLayerError
-from bgd.operators import *
+# pylint: disable=import-error,no-name-in-module
+from bgd.operators import conv_2d_forward, \
+                          conv_2d_backward, conv_2d_backward_weights, \
+                          max_pooling_2d_backward, max_pooling_2d_forward
 
 class Layer(metaclass=ABCMeta):
     """ Base class for neural and non-neural layers.
@@ -19,19 +21,19 @@ class Layer(metaclass=ABCMeta):
 
     Args:
         copy (bool):
-            Whether to copy layer output
+            Whether to copy layer output.
         save_input (bool):
-            Whether to keep a reference to the input array
+            Whether to keep a reference to the input array..
         save_output (bool):
-            Whether to keep a reference to the output array
+            Whether to keep a reference to the output array.
 
     Attributes:
         input_shape (tuple):
-            Shape of the input array
-        current_input (np.ndarray):
-            Reference to the current input array
-        current_output (np.ndarray):
-            Reference to the current output array
+            Shape of the input array.
+        current_input (:obj:`np.ndarray`):
+            Reference to the current input array.
+        current_output (:obj:`np.ndarray`):
+            Reference to the current output array.
         propagate (bool):
             Whether to propagate the signal. This is usually
             set to False for the first layer of a sequential
@@ -76,6 +78,7 @@ class Layer(metaclass=ABCMeta):
                 weights = weights - delta_fragments[0]
                 biases  = biases  - delta_fragments[1]
         """
+        del delta_fragments  # unused
         raise NonLearnableLayerError(
             "Cannot update parameters of a %s layer" % self.__class__.__name__)
 
@@ -84,7 +87,7 @@ class Layer(metaclass=ABCMeta):
         checks the input shape, computes the output and saves the output if needed.
 
         Args:
-            X (np.ndarray):
+            X (:obj:`np.ndarray`):
                 Input array
         """
         self.input_shape = X.shape
@@ -117,8 +120,6 @@ class Layer(metaclass=ABCMeta):
                 # If wrapped method does not return a gradient vector,
                 # then replace it by None
                 out = (out, None)
-            signal = out[0]
-            #assert signal.shape == self.input_shape  ## TODO: check necessity of this line
             return out
         else:
             # Propagation is deactivated -> signal   == None
@@ -141,7 +142,7 @@ class Layer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def _backward(self, X):
+    def _backward(self, error, extra_info=None):
         """ Wrapped method for applying a backward pass on input X. """
         pass
 
@@ -152,25 +153,25 @@ class FullyConnected(Layer):
 
     Args:
         n_in (int):
-            Number of input neurons
+            Number of input neurons.
         n_out (int):
-            Number of output neurons
+            Number of output neurons.
         copy (bool):
-            Whether to copy layer output
+            Whether to copy layer output.
         with_bias (bool):
-            Whether add a bias to output neurons
+            Whether add a bias to output neurons.
         dtype (type):
-            Type of weights and biases
-        initializer (bgd.initializers.Initializer):
-            Initializer of the weights
-        bias_initializer (bgd.initializers.Initializer):
-            Initializer of the biases
+            Type of weights and biases.
+        initializer (:class:`bgd.initializers.Initializer`):
+            Initializer of the weights.
+        bias_initializer (:class:`bgd.initializers.Initializer`):
+            Initializer of the biases.
 
     Attributes:
-        weights (np.ndarray):
-            matrix of weights
-        biases (np.ndarray):
-            vector of biases
+        weights (:obj:`np.ndarray`):
+            Matrix of weights.
+        biases (:obj:`np.ndarray`):
+            Vector of biases.
     """
 
     def __init__(self, n_in, n_out, copy=False, with_bias=True,
@@ -193,11 +194,15 @@ class FullyConnected(Layer):
         # Output: X * W + b
         return np.dot(X, self.weights) + self.biases
 
-    def _backward(self, error, extra_info={}):
+    def _backward(self, error, extra_info=None):
         gradient_weights = np.dot(self.current_input.T, error)
-        if extra_info['l2_reg'] > 0:
-            # Derivative of L2 regularization term
-            gradient_weights += extra_info['l2_reg'] * self.weights
+        try:
+            l2_alpha = extra_info['l2_reg']
+            if l2_alpha > 0:
+                # Derivative of L2 regularization term
+                gradient_weights += l2_alpha * self.weights
+        except KeyError:
+            pass
         gradient_bias = np.sum(error, axis=0, keepdims=True)
         if self.with_bias:
             gradients = (gradient_weights, gradient_bias)
@@ -212,8 +217,7 @@ class FullyConnected(Layer):
     def get_parameters(self):
         if self.with_bias:
             return (self.weights, self.biases)
-        else:
-            return (self.weights,)
+        return (self.weights,)
 
     def update_parameters(self, delta_fragments):
         self.weights -= delta_fragments[0]
@@ -286,6 +290,8 @@ class Convolutional2D(Layer):
         self.in_buffer = None
         self.out_buffer = None
         self.n_jobs = n_jobs
+        self.error_buffer = None
+        self.n_instances = -1
 
     def init_weights(self, dtype, in_shape):
         filters_shape = tuple([self.n_filters] + list(self.filter_shape))
@@ -310,17 +316,13 @@ class Convolutional2D(Layer):
 
         conv_2d_forward(self.out_buffer, X.astype(np.float32), self.filters,
                         self.biases, self.strides, self.with_bias, self.n_jobs)
-        G = np.copy(self.out_buffer)
-        conv_2d_forward_sse(self.out_buffer, X.astype(np.float32), self.filters,
-                            self.biases, self.strides, self.with_bias)
-        G2 = np.copy(self.out_buffer)
-        print("Forward - similarity between regular version and SSE version: %f" \
-            % (np.isclose(G, G2).sum() / float(G.size)))
+        #conv_2d_forward_sse(self.out_buffer, X.astype(np.float32), self.filters,
+        #                    self.biases, self.strides, self.with_bias)
 
         self.n_instances = X.shape[0]
         return self.out_buffer[:X.shape[0], :, :, :]
 
-    def _backward(self, error, extra_info):
+    def _backward(self, error, extra_info=None):
         # sum on 3 first dimensions to only keep the 4th (i.e. n_filters)
         db = np.sum(error, axis=(0, 1, 2))
         if self.current_input.ndim == 3:
@@ -340,8 +342,7 @@ class Convolutional2D(Layer):
                             )
             signal = self.error_buffer[:self.n_instances, :, :, :]
             return (signal, (self.in_buffer, db))
-        else:
-            return (None, (self.in_buffer, db))
+        return (None, (self.in_buffer, db))
 
     def get_parameters(self):
         return (self.filters, self.biases) if self.with_bias else (self.filters,)
@@ -399,8 +400,7 @@ class Dropout(Layer):
         if self.active:
             self.mask = (np.random.rand(*X.shape) > (1. - self.keep_proba))
             return self.mask * X
-        else:
-            return X
+        return X
 
     def _backward(self, error, extra_info=None):
         assert self.active

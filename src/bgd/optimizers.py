@@ -74,12 +74,13 @@ class MomentumOptimizer(Optimizer):
         learning_rate (:obj:`float`, optional):
             Constant steplength.
         momentum (:obj:`float`, optional):
-            Persistence of previous
-            gradient vectors. Old vectors are re-used to compute the
-            new search direction, with respect to the momentum value.
+            Persistence of previous gradient vectors. Old vectors
+            are re-used to compute the new search direction,
+            with respect to the momentum value.
 
     Attributes:
-        previous_grad (np.ndarray): Gradient vector at previous iteration.
+        previous_grad (:obj:`np.ndarray`):
+            Gradient vector at previous iteration.
     """
 
     def __init__(self, learning_rate=.005, momentum=.9):
@@ -112,8 +113,10 @@ class AdamOptimizer(Optimizer):
 
     Attributes:
         step (int): Current iteration.
-        moment_1 (np.ndarray): Last 1st moment vector.
-        moment_2 (np.ndarray): Last 2nd moment vector.
+        moment_1 (:obj:`np.ndarray`):
+            Last 1st moment vector.
+        moment_2 (:obj:`np.ndarray`):
+            Last 2nd moment vector.
 
     References:
         ADAM: A Method For Stochastic Optimization
@@ -146,13 +149,18 @@ class LBFGS(Optimizer):
     """ Quasi-newtonian optimizer with limited memory.
 
     Args:
-        m (:obj:`int`, optional): Memory size.
+        m (:obj:`int`, optional):
+            Memory size.
+        epsilon (:obj:`float`, optional):
+            Constant for numeric stability.
+        first_order_optimizer (:class:`Optimizer`):
+            First order optimizer used to approximate the Hessian product.
 
     Attributes:
         k (int):
             Current iteration of L-BFGS.
-            previous_grad (np.ndarray): Gradient vector at
-            iteration k-1.
+        previous_grad (:obj:`np.ndarray`):
+            Gradient vector at iteration k-1.
         y (list):
             List of m last gradient differences.
             y_t = grad_{t+1} - grad_t
