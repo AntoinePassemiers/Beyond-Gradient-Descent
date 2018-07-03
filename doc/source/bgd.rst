@@ -3,7 +3,7 @@ bgd package
 
 .. automodule:: bgd
     :members:
-    :undoc-members:
+    :private-members:
     :show-inheritance:
 
 Submodules

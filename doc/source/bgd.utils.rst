@@ -3,5 +3,5 @@ bgd.utils module
 
 .. automodule:: bgd.utils
     :members:
-    :undoc-members:
+    :private-members:
     :show-inheritance:

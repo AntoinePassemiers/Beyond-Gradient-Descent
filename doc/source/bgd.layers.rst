@@ -3,5 +3,5 @@ bgd.layers module
 
 .. automodule:: bgd.layers
     :members:
-    :undoc-members:
+    :private-members:
     :show-inheritance:

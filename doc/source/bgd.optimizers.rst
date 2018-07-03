@@ -3,5 +3,5 @@ bgd.optimizers module
 
 .. automodule:: bgd.optimizers
     :members:
-    :undoc-members:
+    :private-members:
     :show-inheritance:

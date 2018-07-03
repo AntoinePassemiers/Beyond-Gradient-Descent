@@ -3,5 +3,5 @@ bgd.operators module
 
 .. automodule:: bgd.operators
     :members:
-    :undoc-members:
+    :private-members:
     :show-inheritance:

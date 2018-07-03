@@ -3,5 +3,5 @@ bgd.batch module
 
 .. automodule:: bgd.batch
     :members:
-    :undoc-members:
+    :private-members:
     :show-inheritance:

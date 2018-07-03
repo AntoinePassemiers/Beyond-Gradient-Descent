@@ -3,5 +3,5 @@ bgd.initializers module
 
 .. automodule:: bgd.initializers
     :members:
-    :undoc-members:
+    :private-members:
     :show-inheritance:
