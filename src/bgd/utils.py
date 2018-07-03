@@ -20,3 +20,6 @@ class RequiredComponentError(Exception):
 
 class WrongComponentTypeError(Exception):
     pass
+
+class NonLearnableLayerError(Exception):
+    pass

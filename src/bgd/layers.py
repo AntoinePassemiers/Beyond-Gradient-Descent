@@ -7,7 +7,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 
 from bgd.initializers import ZeroInitializer, GlorotUniformInitializer
-from bgd.errors import NonLearnableLayerError
+from bgd.utils import NonLearnableLayerError
 from bgd.operators import *
 
 class Layer(metaclass=ABCMeta):
@@ -118,7 +118,7 @@ class Layer(metaclass=ABCMeta):
                 # then replace it by None
                 out = (out, None)
             signal = out[0]
-            assert signal.shape == self.input_shape
+            #assert signal.shape == self.input_shape  ## TODO: check necessity of this line
             return out
         else:
             # Propagation is deactivated -> signal   == None
