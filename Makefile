@@ -7,4 +7,4 @@ doc: bgd
 	make -C doc/ html
 	rm -f src/bgd/*.so
 
-.PHONY: bgd, doc
+.PHONY: bgd doc
