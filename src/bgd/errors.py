@@ -23,7 +23,7 @@ class Error(metaclass=ABCMeta):
         shape (n_samples,) with the per-sample cost.
 
         Returns:
-            (:obj:`np.ndarray`):
+            :obj:`np.ndarray`:
                 loss:
                     The error function value for each sample
                     of the batch. `shape == (len(y),)`
@@ -36,7 +36,7 @@ class Error(metaclass=ABCMeta):
         not depend on to the model parameters.
 
         Returns:
-            (:obj:`np.ndarray`):
+            :obj:`np.ndarray`:
                 grad:
                     The gradient of the error for each sample
                     of the batch. `shape == (len(y),)`
@@ -70,7 +70,7 @@ class MSE(Error):
                 Predicted values.
 
         Returns:
-            (:obj:`np.ndarray`):
+            :obj:`np.ndarray`:
                 loss:
                     The error function value for each sample
                     of the batch. `shape == (len(y),)`
@@ -87,7 +87,7 @@ class MSE(Error):
                 Predicted values.
 
         Returns:
-            (:obj:`np.ndarray`):
+            :obj:`np.ndarray`:
                 grad:
                     The gradient of the error for each sample
                     of the batch. `shape == (len(y),)`
@@ -115,7 +115,7 @@ class CrossEntropy(Error):
                 Predicted values.
 
         Returns:
-            (:obj:`np.ndarray`):
+            :obj:`np.ndarray`:
                 loss:
                     The error function value for each sample
                     of the batch. `shape == (len(y),)`
@@ -135,7 +135,7 @@ class CrossEntropy(Error):
                 Predicted values.
 
         Returns:
-            (:obj:`np.ndarray`):
+            :obj:`np.ndarray`:
                 grad:
                     The gradient of the error for each sample
                     of the batch. `shape == (len(y),)`

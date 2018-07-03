@@ -28,7 +28,7 @@ class Initializer(metaclass=ABCMeta):
                 Data type of the array to be initialized.
 
         Returns:
-            (:obj:`np.ndarray`):
+            :obj:`np.ndarray`:
                 An array of provided shape initialized accordingly.
         """
         if self.seed:

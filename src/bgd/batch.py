@@ -36,7 +36,7 @@ class Batching(metaclass=ABCMeta):
         the provided dataset.
 
         Returns:
-            (:obj:`tuple`):
+            :
                 X (:obj:`np.ndarray`):
                     Batch samples.
                 y (:obj:`np.ndarray`):
@@ -92,7 +92,7 @@ class SGDBatching(Batching):
         """ Retrieves next batch using a generator function.
 
         Returns:
-            (:obj:`tuple`):
+            :
                 X (:obj:`np.ndarray`):
                     Batch samples.
                 y (:obj:`np.ndarray`):
@@ -108,7 +108,7 @@ class SGDBatching(Batching):
             y (:obj:`np.ndarray`): Target values.
 
         Yields:
-            (:obj:`tuple`):
+            :
                 X (:obj:`np.ndarray`):
                     Batch samples.
                 y (:obj:`np.ndarray`):

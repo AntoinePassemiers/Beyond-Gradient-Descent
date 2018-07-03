@@ -60,7 +60,7 @@ def binarize_labels(y):
             Vector of classes.
 
     Returns:
-        (:obj:`np.ndarray`):
+        :obj:`np.ndarray`:
             binary_y:
                 Binary matrix of shape (n_instances, n_classes)
                 s.t. `binary_y[i,j] == 1` iff `y[i] == j`.
@@ -223,7 +223,7 @@ class NeuralStack:
                 Proportion of samples to be kept for validation.
 
         Returns:
-            (:obj:`np.ndarray`):
+            :obj:`np.ndarray`:
                 errors:
                     array of the loss of each batch.
 
@@ -339,7 +339,7 @@ class NeuralStack:
                 Index of the last layer of propagation (-1 for last layer).
 
         Returns:
-            (:obj:`np.ndarray`):
+            :obj:`np.ndarray`:
                 out:
                     Output of the propagation of X through each layer
                     of the model.
