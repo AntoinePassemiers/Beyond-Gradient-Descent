@@ -39,7 +39,7 @@ class Optimizer(metaclass=ABCMeta):
         of each layer, individually.
         """
         gradient = list()
-        for src_layer, layer_param_shapes, fragments in self.gradient_fragments:
+        for _, _, fragments in self.gradient_fragments:
             for fragment in fragments:
                 gradient.append(fragment.flatten(order='C'))
         gradient = np.concatenate(gradient)
@@ -59,7 +59,7 @@ class Optimizer(metaclass=ABCMeta):
             src_layer.update_parameters(tuple(layer_fragments))
 
     def add_gradient_fragments(self, src_layer, fragments):
-        if not (isinstance(fragments, tuple) or (isinstance(fragments, list))):
+        if not isinstance(fragments, (tuple, list)):
             fragments = [fragments]
         layer_param_shapes = list()
         for fragment in fragments:
@@ -84,7 +84,7 @@ class MomentumOptimizer(Optimizer):
 
     def __init__(self, learning_rate=.005, momentum=.9):
         Optimizer.__init__(self)
-        assert(0 <= momentum <= 1)
+        assert 0 <= momentum <= 1
         self.learning_rate = learning_rate
         self.momentum = momentum
         self.previous_grad = None
@@ -123,7 +123,7 @@ class AdamOptimizer(Optimizer):
 
     def __init__(self, learning_rate=.001, beta_1=.9, beta_2=.999, epsilon=1e-8):
         Optimizer.__init__(self)
-        assert((0 <= beta_1 < 1) and (0 <= beta_2 < 1))
+        assert (0 <= beta_1 < 1) and (0 <= beta_2 < 1)
         self.learning_rate = learning_rate
         self.beta_1 = beta_1
         self.beta_2 = beta_2
@@ -188,7 +188,8 @@ class LBFGS(Optimizer):
             if np.dot(y_k_minus_1, s_k_minus_1) > self.epsilon * np.sum(s_k_minus_1 ** 2) or True: # TODO
                 # Quasi-Newton update
                 self.y.append(y_k_minus_1)
-                rho_k_minus_1 = 1. / np.dot(s_k_minus_1, y_k_minus_1)
+                ## TODO: check for rho_k_minus_1 because it is not used
+                #rho_k_minus_1 = 1. / np.dot(s_k_minus_1, y_k_minus_1)
             else:
                 self.s = self.s[:-1]
             # Ensure history has a length of m
@@ -196,7 +197,7 @@ class LBFGS(Optimizer):
                 self.y = self.y[1:]
                 self.s = self.s[1:]
             # Ensure that correction pairs are actually pairs
-            assert(len(self.s) == len(self.y))
+            assert len(self.s) == len(self.y)
 
 
         # Two-loop recursion: Only if memory contains a sufficient
