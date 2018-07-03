@@ -2,15 +2,21 @@
 # nn.py
 # author : Antoine Passemiers, Robin Petit
 
-from bgd.batch import Batching, SGDBatching
+from bgd.batch import Batching
 from bgd.errors import Error
 from bgd.layers import Layer, Dropout
-from bgd.errors import MSE, CrossEntropy
-from bgd.optimizers import MomentumOptimizer, Optimizer
+from bgd.errors import CrossEntropy
+from bgd.optimizers import Optimizer
 from bgd.utils import log, RequiredComponentError, WrongComponentTypeError
 
-import copy
 import numpy as np
+
+def split_train_val(X, y, validation_fraction):
+    split = int(len(X) * (1. - validation_fraction))
+    indices = np.arange(len(X))
+    np.random.shuffle(indices)
+    X, y = X[indices], np.squeeze(y[indices])
+    return X[:split], y[:split], X[split:], y[split:]
 
 
 class NeuralStack:
@@ -76,13 +82,6 @@ class NeuralStack:
             binary_y[:, c] = (y == c)
         return binary_y
 
-    def split_train_val(self, X, y, validation_fraction):
-        split = int(len(X) * (1. - validation_fraction))
-        indices = np.arange(len(X))
-        np.random.shuffle(indices)
-        X, y = X[indices], np.squeeze(y[indices])
-        return X[:split], y[:split], X[split:], y[split:]
-
     def get_accuracy(self, X_val, y_val, batch_size=256):
         nb_correct = 0
         for i in np.arange(0, X_val.shape[0], batch_size):
@@ -91,7 +90,7 @@ class NeuralStack:
             assert len(val_probs) == len(indices)
             nb_correct += (val_probs.argmax(axis=1) == y_val[indices]).sum()
         return 100 * nb_correct / X_val.shape[0]
-    
+
     def eval_loss(self, batch_y, predictions, alpha):
         loss = self.error_op.eval(batch_y, predictions)
 
@@ -112,7 +111,7 @@ class NeuralStack:
 
         # Split data into training data and validation data for early stopping
         if validation_fraction > 0:
-            X_train, y_train, X_val, y_val = self.split_train_val(X, y, validation_fraction)
+            X_train, y_train, X_val, y_val = split_train_val(X, y, validation_fraction)
         else:
             X_train, y_train = X, y
 
@@ -163,21 +162,23 @@ class NeuralStack:
                             val_accuracy = self.get_accuracy(X_val, y_val)
                         else:
                             val_accuracy = -1
-                        log('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation accuracy: {3:.1f}'.format(
-                            epoch, str(batch_id) + ')', loss, val_accuracy))
+                        log(('Loss at epoch {0} (batch {1: <9}:' + \
+                             ' {2: <20} - Validation accuracy: {3:.1f}') \
+                             .format(epoch, str(batch_id) + ')', loss, val_accuracy))
                     else:
                         if validation_fraction > 0:
                             val_preds = self.eval(X_val)
                             val_mse = self.error_op.eval(y_val, val_preds)
                         else:
                             val_accuracy = -1
-                        log('Loss at epoch {0} (batch {1: <9} : {2: <20} - Validation MSE: {3: <15}'.format(
-                            epoch, str(batch_id) + ')', loss, val_mse))
+                        log(('Loss at epoch {0} (batch {1: <9}: ' + \
+                             '{2: <20} - Validation MSE: {3: <15}') \
+                             .format(epoch, str(batch_id) + ')', loss, val_mse))
         return errors
 
     def eval(self, X, start=0, stop=-1):
         if stop == -1 or stop > len(self.layers):
-            stop = len(self.layers) 
+            stop = len(self.layers)
         for i in range(start, stop):
             X = self.layers[i].forward(X)
         return X
@@ -186,7 +187,7 @@ class NeuralStack:
         for layer in self.layers:
             if isinstance(layer, Dropout):
                 layer.activate()
-    
+
     def deactivate_dropout(self):
         for layer in self.layers:
             if isinstance(layer, Dropout):

@@ -2,9 +2,8 @@
 # batch.py: Batching methods for neural networks
 # author : Antoine Passemiers, Robin Petit
 
-import numpy as np
 from abc import ABCMeta, abstractmethod
-
+import numpy as np
 
 class Batching(metaclass=ABCMeta):
     """ Base class for generating batches.
@@ -19,9 +18,9 @@ class Batching(metaclass=ABCMeta):
 
     def __init__(self):
         self.warm = False
-    
+
     def start(self, X, y):
-        """ Wrapper method for providing a dataset 
+        """ Wrapper method for providing a dataset
         to the batching algorithm.
         This is required before to call method 'next'.
 
@@ -31,23 +30,23 @@ class Batching(metaclass=ABCMeta):
         """
         self._start(X, y)
         self.warm = True
-    
+
     def next(self):
-        """ Wrapper method for retrieving a batch from 
+        """ Wrapper method for retrieving a batch from
         the provided dataset. """
-        assert(self.warm)
+        assert self.warm
         return self._next()
 
     @abstractmethod
     def _start(self, X, y):
-        """ Wrapped method for providing a dataset 
+        """ Wrapped method for providing a dataset
         to the batching algorithm. Subclasses must
         override this method."""
         pass
 
     @abstractmethod
     def _next(self):
-        """ Wrapped method for retrieving a batch from 
+        """ Wrapped method for retrieving a batch from
         the provided dataset. Subclasses must override
         this method."""
         pass
@@ -68,7 +67,8 @@ class SGDBatching(Batching):
         Batching.__init__(self)
         self.batch_size = batch_size
         self.shuffle = shuffle
-    
+        self.batches = None
+
     def _start(self, X, y):
         """ Provide a dataset to the batching algorithm.
         This is required before to call method 'next'.
@@ -79,7 +79,7 @@ class SGDBatching(Batching):
         """
         self.batch_size = min(len(X), self.batch_size)
         self.batches = self.mini_batches(X, y)
-    
+
     def _next(self):
         """ Retrieve next batch using a generator function. """
         return next(self.batches)

@@ -19,14 +19,14 @@ class Optimizer(metaclass=ABCMeta):
 
     def __init__(self):
         self.gradient_fragments = list()
-    
+
     def flush(self):
         self.gradient_fragments = list()
 
     @abstractmethod
     def _update(self, grad, F):
         pass
-    
+
     def update(self, F):
         """ Computes best move in the parameter space at
         current iteration using optimization techniques.
@@ -39,14 +39,14 @@ class Optimizer(metaclass=ABCMeta):
         of each layer, individually.
         """
         gradient = list()
-        for src_layer, layer_param_shapes, fragments in self.gradient_fragments:
+        for _, _, fragments in self.gradient_fragments:
             for fragment in fragments:
                 gradient.append(fragment.flatten(order='C'))
         gradient = np.concatenate(gradient)
 
         delta = self._update(gradient, F)
         self.update_layers(delta)
-    
+
     def update_layers(self, delta):
         cursor = 0
         for src_layer, layer_param_shapes, _ in self.gradient_fragments:
@@ -57,9 +57,9 @@ class Optimizer(metaclass=ABCMeta):
                 layer_fragments.append(fragment.reshape(fragment_shape, order='C'))
                 cursor += n_elements
             src_layer.update_parameters(tuple(layer_fragments))
-    
+
     def add_gradient_fragments(self, src_layer, fragments):
-        if not (isinstance(fragments, tuple) or (isinstance(fragments, list))):
+        if not isinstance(fragments, (tuple, list)):
             fragments = [fragments]
         layer_param_shapes = list()
         for fragment in fragments:
@@ -69,24 +69,26 @@ class Optimizer(metaclass=ABCMeta):
 
 class MomentumOptimizer(Optimizer):
     """ Simple first order optimizer with momentum support.
-    
+
     Args:
-        learning_rate (:obj:`float`, optional): Constant steplength.
-        momentum (:obj:`float`, optional): Persistence of previous
+        learning_rate (:obj:`float`, optional):
+            Constant steplength.
+        momentum (:obj:`float`, optional):
+            Persistence of previous
             gradient vectors. Old vectors are re-used to compute the
             new search direction, with respect to the momentum value.
-    
+
     Attributes:
         previous_grad (np.ndarray): Gradient vector at previous iteration.
     """
 
     def __init__(self, learning_rate=.005, momentum=.9):
         Optimizer.__init__(self)
-        assert(0 <= momentum <= 1)
+        assert 0 <= momentum <= 1
         self.learning_rate = learning_rate
         self.momentum = momentum
         self.previous_grad = None
-    
+
     def _update(self, grad, F):
         delta = self.learning_rate * grad
         if self.momentum > 0:
@@ -99,13 +101,15 @@ class MomentumOptimizer(Optimizer):
 class AdamOptimizer(Optimizer):
     """
     Args:
-        learning_rate (:obj:`float`, optional): Constant steplength.
-        beta_1 (:obj:`float`, optional): Exponential decay rate of the moving
-            average of the gradient.
-        beta_2 (:obj:`float`, optional): Exponential decay rate of the moving
-            average of th.
-        epsilon (:obj:`float`, optional): Constant for numeric stability.
-    
+        learning_rate (:obj:`float`, optional):
+            Constant steplength.
+        beta_1 (:obj:`float`, optional):
+            Exponential decay rate of the moving average of the gradient.
+        beta_2 (:obj:`float`, optional):
+            Exponential decay rate of the moving average of th.
+        epsilon (:obj:`float`, optional):
+            Constant for numeric stability.
+
     Attributes:
         step (int): Current iteration.
         moment_1 (np.ndarray): Last 1st moment vector.
@@ -119,7 +123,7 @@ class AdamOptimizer(Optimizer):
 
     def __init__(self, learning_rate=.001, beta_1=.9, beta_2=.999, epsilon=1e-8):
         Optimizer.__init__(self)
-        assert((0 <= beta_1 < 1) and (0 <= beta_2 < 1))
+        assert (0 <= beta_1 < 1) and (0 <= beta_2 < 1)
         self.learning_rate = learning_rate
         self.beta_1 = beta_1
         self.beta_2 = beta_2
@@ -127,7 +131,7 @@ class AdamOptimizer(Optimizer):
         self.step = 0
         self.moment_1 = 0
         self.moment_2 = 0
-    
+
     def _update(self, grad, F):
         self.step += 1
         self.moment_1 = self.beta_1 * self.moment_1 + (1. - self.beta_1) * grad
@@ -143,20 +147,24 @@ class LBFGS(Optimizer):
 
     Args:
         m (:obj:`int`, optional): Memory size.
-    
+
     Attributes:
-        k (int): Current iteration of L-BFGS.
-        previous_grad (np.ndarray): Gradient vector at
+        k (int):
+            Current iteration of L-BFGS.
+            previous_grad (np.ndarray): Gradient vector at
             iteration k-1.
-        y (list): List of m last gradient differences.
+        y (list):
+            List of m last gradient differences.
             y_t = grad_{t+1} - grad_t
-        s (list): List of m last update vectors.
+        s (list):
+            List of m last update vectors.
             s_t = H * grad * steplength, where H is the
             Hessian matrix.
-        alpha (list): List of m last alpha coefficients
+        alpha (list):
+            List of m last alpha coefficients
             alpha_i = rho_i * s_i.T * grad,
             where rho_i = 1. / (s_i.T * y_i).
-    
+
     References:
         Updating Quasi-Newton Matrices with Limited Storage
             Nocedal, J. (1980)
@@ -180,7 +188,8 @@ class LBFGS(Optimizer):
             if np.dot(y_k_minus_1, s_k_minus_1) > self.epsilon * np.sum(s_k_minus_1 ** 2) or True: # TODO
                 # Quasi-Newton update
                 self.y.append(y_k_minus_1)
-                rho_k_minus_1 = 1. / np.dot(s_k_minus_1, y_k_minus_1)
+                ## TODO: check for rho_k_minus_1 because it is not used
+                #rho_k_minus_1 = 1. / np.dot(s_k_minus_1, y_k_minus_1)
             else:
                 self.s = self.s[:-1]
             # Ensure history has a length of m
@@ -188,7 +197,7 @@ class LBFGS(Optimizer):
                 self.y = self.y[1:]
                 self.s = self.s[1:]
             # Ensure that correction pairs are actually pairs
-            assert(len(self.s) == len(self.y))
+            assert len(self.s) == len(self.y)
 
 
         # Two-loop recursion: Only if memory contains a sufficient

@@ -7,13 +7,13 @@ from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup as np_setup
 
 DELETE_GENERATED_C_FILES = False
-source_folder = "bgd"
-sub_packages = []
-source_files = [
+SRC_FOLDER = "bgd"
+SUB_PACKAGES = []
+SRC_FILES = [
     (["operators.c"], "operators"),
 ]
 
-compile_args = [
+COMPILE_ARGS = [
     '-fopenmp',
     '-O3',
     '-march=native',
@@ -23,29 +23,29 @@ compile_args = [
     '-mfpmath=sse',
 ]
 
-libraries = ["m"] if os.name == "posix" else list()
-include_dirs = [np.get_include()]
+LIBRARIES = ["m"] if os.name == "posix" else list()
+INCLUDE_DIRS = [np.get_include()]
 
-config = Configuration(source_folder, "", "")
-for sub_package in sub_packages:
-    config.add_subpackage(sub_package)
-for sources, extension_name in source_files:
-    sources = [os.path.join(source_folder, source) for source in sources]
+CONFIG = Configuration(SRC_FOLDER, "", "")
+for sub_package in SUB_PACKAGES:
+    CONFIG.add_subpackage(sub_package)
+for sources, extension_name in SRC_FILES:
+    sources = [os.path.join(SRC_FOLDER, source) for source in sources]
     extension_name = os.path.splitext(extension_name)[0]
     print(extension_name, sources)
-    config.add_extension(
-        extension_name, 
+    CONFIG.add_extension(
+        extension_name,
         sources=sources,
-        include_dirs =include_dirs+[os.curdir],
-        libraries=libraries,
-        extra_compile_args=compile_args,
+        include_dirs=INCLUDE_DIRS + [os.curdir],
+        libraries=LIBRARIES,
+        extra_compile_args=COMPILE_ARGS,
         extra_link_args=['-fopenmp']
     )
 
-np_setup(**config.todict())
+np_setup(**CONFIG.todict())
 
 if DELETE_GENERATED_C_FILES:
-    for source_file in source_files:
-        filepath = os.path.join(source_folder, source_file[0][0])
+    for source_file in SRC_FILES:
+        filepath = os.path.join(SRC_FOLDER, source_file[0][0])
         if os.path.isfile(filepath) and os.path.splitext(filepath)[1] == '.c':
             os.remove(filepath)

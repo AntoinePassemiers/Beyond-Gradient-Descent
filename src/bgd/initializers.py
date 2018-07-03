@@ -8,7 +8,7 @@ import numpy as np
 
 class Initializer(metaclass=ABCMeta):
     """ Base class for all initializers.
-    
+
     Args:
         seed (int):
             Seed for the random number generator
@@ -16,7 +16,7 @@ class Initializer(metaclass=ABCMeta):
 
     def __init__(self, seed=None):
         self.seed = seed
-    
+
     def initialize(self, shape, dtype=np.float32):
         """ Return array with random values. The distribution
         of the values is defined in subclasses.
@@ -46,7 +46,7 @@ class ZeroInitializer(Initializer):
 
     def __init__(self):
         Initializer.__init__(self, seed=None)
-    
+
     def _initialize(self, shape):
         return np.zeros(shape)
 
@@ -67,13 +67,13 @@ class UniformInitializer(Initializer):
         Initializer.__init__(self, seed=seed)
         self.min_value = min_value
         self.max_value = max_value
-    
+
     def _initialize(self, shape):
         return np.random.uniform(self.min_value, self.max_value, size=shape)
 
 
 class GlorotUniformInitializer(Initializer):
-    """ Initializer for generating arrays using a 
+    """ Initializer for generating arrays using a
     Glorot uniform distribution.
 
     Args:
@@ -97,7 +97,7 @@ class GlorotUniformInitializer(Initializer):
 
 
 class GaussianInitializer(Initializer):
-    """ Initializer for generating arrays using a 
+    """ Initializer for generating arrays using a
     Gaussian distribution.
 
     Args:
@@ -116,14 +116,14 @@ class GaussianInitializer(Initializer):
         self.mean = mean
         self.stdv = stdv
         self.truncated = truncated
-    
+
     def _initialize(self, shape):
         # TODO: if truncated, discard samples that are more than 2*stdv and re-generate them
         return np.random.normal(loc=self.mean, scale=self.stdv, size=shape)
 
 
 class GlorotGaussianInitializer(Initializer):
-    """ Initializer for generating arrays using a 
+    """ Initializer for generating arrays using a
     Glorot Gaussian distribution.
 
     Args:

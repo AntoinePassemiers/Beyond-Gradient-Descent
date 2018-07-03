@@ -18,29 +18,29 @@ class Error(metaclass=ABCMeta):
             the expected outputs. Must have same length as X.
     """
 
-    def eval(self, X, Y):
+    def eval(self, y, y_hat):
         """ Evaluates the error operator and returns an array of
         shape (n_samples,) with the per-sample cost.
         """
-        assert(len(X) == len(Y))
-        return self._eval(X, Y)
-    
-    def grad(self, X, Y):
+        assert len(y) == len(y_hat)
+        return self._eval(y, y_hat)
+
+    def grad(self, y, y_hat):
         """ Evaluates the gradient of the error. The error must be
         inconditional to the model parameters. In other words, the
         error is non-parametric.
         """
-        assert(len(X) == len(Y))
-        return self._grad(X, Y)
+        assert len(y) == len(y_hat)
+        return self._grad(y, y_hat)
 
     @abstractmethod
-    def _eval(self, X, Y):
+    def _eval(self, y, y_hat):
         """ Wrapped method for evaluating the error operator.
         Subclasses must override this method. """
         pass
 
     @abstractmethod
-    def _grad(self, X, Y):
+    def _grad(self, y, y_hat):
         """ Wrapped method for evaluating the error gradient.
         Subclasses must override this method. """
         pass
@@ -78,7 +78,7 @@ class CrossEntropy(Error):
     def __init__(self, epsilon=1e-15):
         self.epsilon = epsilon
 
-    def _eval(self, y, probs):
+    def _eval(self, y, y_hat):
         """ Return cross-entropy metric.
 
         Args:
@@ -86,15 +86,15 @@ class CrossEntropy(Error):
             y_hat (np.ndarray): predicted values
         """
         indices = np.argmax(y, axis=1).astype(np.int)
-        predictions = probs[np.arange(len(probs)), indices]
+        predictions = y_hat[np.arange(len(y_hat)), indices]
         log_predictions = np.log(np.maximum(predictions, self.epsilon))
         return -np.mean(log_predictions)
 
-    def _grad(self, y, probs):
+    def _grad(self, y, y_hat):
         """ Return derivative of cross-entropy function.
 
         Args:
             y (np.ndarray): ground truth labels
             y_hat (np.ndarray): predicted values
         """
-        return probs - y
+        return y_hat - y

@@ -54,8 +54,10 @@ for source_file in source_files:
                   extra_link_args=['-fopenmp']
         )
     )
+    extensions[-1].cython_directives = {'embedsignature': True}
 
-GOT_BUILD_CMD = "install" in sys.argv or "build" in sys.argv
+build_cmds = {'install', 'build', 'build_ext'}
+GOT_BUILD_CMD = len(set(sys.argv) & build_cmds)  != 0
 if USE_CYTHON and GOT_BUILD_CMD:
     # Setting "bgd" as the root package
     # This is to prevent cython from generating inappropriate variable names
@@ -68,7 +70,8 @@ if USE_CYTHON and GOT_BUILD_CMD:
     print('\t\tCYTHONINZING')
     extensions = cythonize(
         extensions,
-        language = "c"
+        language = "c",
+        compiler_directives={'embedsignature': True}
     )
 
 if GOT_BUILD_CMD:
