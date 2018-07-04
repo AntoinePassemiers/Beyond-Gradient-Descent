@@ -12,6 +12,7 @@ Submodules
 .. toctree::
 
    bgd.batch
+   bgd.cost
    bgd.errors
    bgd.initializers
    bgd.layers

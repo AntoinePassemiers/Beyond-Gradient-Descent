@@ -57,7 +57,11 @@ class Cost(metaclass=ABCMeta):
 
 
 class MSE(Cost):
-    """ Differentiable Mean Squared Error operator """
+    r""" Differentiable Mean Squared Error operator.
+
+    .. math::
+        C(y, \hat y) = \frac 1{2n}\sum_{i=1}^n\big(y_i - \hat y_i\big)^2
+    """
 
     def _eval(self, y, y_hat):
         """ Return mean squared error.
@@ -95,7 +99,10 @@ class MSE(Cost):
 
 
 class CrossEntropy(Cost):
-    """ Differentiable cross-entropy operator.
+    r""" Differentiable cross-entropy operator.
+
+    .. math::
+        C(y, \hat y) = -\frac 1n\sum_{i=1}^n\big[y_i\log\hat y_i + (1-y_i)\log(1-\hat y_i)\big]
 
     Attributes:
         epsilon: parameter for numerical stability
