@@ -10,7 +10,8 @@ Welcome to Beyond Gradient Descent's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   modules.rst
+   mathematical_framework
+   modules
 
 Indices and tables
 ==================
