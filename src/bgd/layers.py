@@ -6,7 +6,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 
 from bgd.initializers import ZeroInitializer, GlorotUniformInitializer
-from bgd.utils import NonLearnableLayerError
+from bgd.errors import NonLearnableLayerError
 # pylint: disable=import-error,no-name-in-module
 from bgd.operators import conv_2d_forward, \
                           conv_2d_backward, conv_2d_backward_weights, \

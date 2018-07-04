@@ -3,11 +3,11 @@
 # author : Antoine Passemiers, Robin Petit
 
 from bgd.batch import Batching
-from bgd.errors import Error
+from bgd.cost import Cost, CrossEntropy
+from bgd.errors import RequiredComponentError, WrongComponentTypeError
 from bgd.layers import Layer, Dropout
-from bgd.errors import CrossEntropy
 from bgd.optimizers import Optimizer
-from bgd.utils import log, RequiredComponentError, WrongComponentTypeError
+from bgd.utils import log
 
 import numpy as np
 
@@ -98,12 +98,12 @@ class NeuralStack:
         layers (list):
             List of layers, where layers[0] is the input layer and
             layers[-1] is the output layer.
-        batch_op (Batching):
+        batch_op (:class:`bgd.batch.Batching`):
             Batching method to use in order to perform one step of the
             backpropagation algorithm.
-        error_op (Error):
+        cost_op (:class:`bgd.cost.Cost`):
             Error metric to use in order to evaluate model performance.
-        optimizer (Optimizer):
+        optimizer (:class:`bgd.optimizers.Optimizer`):
             Optimizer to use in order to update the parameters of the
             model during backpropagation.
     """
@@ -111,7 +111,7 @@ class NeuralStack:
     def __init__(self):
         self.layers = list()
         self.batch_op = None
-        self.error_op = None
+        self.cost_op = None
         self.optimizer = None
 
     def add(self, component):
@@ -137,9 +137,9 @@ class NeuralStack:
         elif isinstance(component, Optimizer):
             # Set the optimizer
             self.optimizer = component
-        elif isinstance(component, Error):
+        elif isinstance(component, Cost):
             # Set the error metric
-            self.error_op = component
+            self.cost_op = component
         elif isinstance(component, Batching):
             # Set the batching algorithm
             self.batch_op = component
@@ -187,7 +187,7 @@ class NeuralStack:
                 loss:
                     The value of the loss function.
         """
-        loss = self.error_op.eval(batch_y, predictions)
+        loss = self.cost_op.eval(batch_y, predictions)
         # Apply L2 regularization
         if alpha > 0:
             for layer in self.layers:
@@ -242,7 +242,7 @@ class NeuralStack:
             >>> nn.add(CrossEntropy())
             >>> nn.add(AdamOptimizer())
             >>> nn.add(SGDBatching(512))
-            >>> errors = nn.train(X, y)
+            >>> losses = nn.train(X, y)
             Loss at epoch 93 (batch 1)       : 0.4746132147046453   - Validation accuracy: 95.0
             Loss at epoch 187 (batch 1)       : 0.31422001176102426  - Validation accuracy: 96.7
             Loss at epoch 281 (batch 1)       : 0.2320271116849095   - Validation accuracy: 95.6
@@ -253,10 +253,10 @@ class NeuralStack:
             Loss at epoch 749 (batch 1)       : 0.1481725308805749   - Validation accuracy: 95.6
             Loss at epoch 843 (batch 1)       : 0.1347951182675034   - Validation accuracy: 95.0
             Loss at epoch 937 (batch 1)       : 0.12705829279032987  - Validation accuracy: 95.0
-            >>> print('Errors:', errors)
+            >>> print('Loss over time:', losses)
             Errors: [ 2.50539121  2.28391007  2.40779468 ...,  0.11655055  0.12436938  0.09155006]
         """
-        errors = list()
+        losses = list()
 
         # Split data into training data and validation data for early stopping
         if validation_fraction > 0:
@@ -265,7 +265,7 @@ class NeuralStack:
             X_train, y_train = X, y
 
         # Binarize labels if classification task
-        if isinstance(self.error_op, CrossEntropy):
+        if isinstance(self.cost_op, CrossEntropy):
             y_train = binarize_labels(y_train)
 
         # Deactivate signal propagation though first layer
@@ -287,10 +287,10 @@ class NeuralStack:
                 # Compute loss function
                 alpha = alpha_reg / self.batch_op.batch_size
                 loss = self.eval_loss(batch_y, predictions, alpha_reg)
-                errors.append(loss)
+                losses.append(loss)
 
                 # Compute gradient of the loss function
-                signal = self.error_op.grad(batch_y, predictions)
+                signal = self.cost_op.grad(batch_y, predictions)
 
                 # Propagate error through each layer
                 for layer in reversed(self.layers):
@@ -306,7 +306,7 @@ class NeuralStack:
                 if seen_instances % print_every == 0:
                     batch_id += 1
                     # Warning: This code section is ugly
-                    if isinstance(self.error_op, CrossEntropy):
+                    if isinstance(self.cost_op, CrossEntropy):
                         if validation_fraction > 0:
                             val_accuracy = self.get_accuracy(X_val, y_val)
                         else:
@@ -317,13 +317,13 @@ class NeuralStack:
                     else:
                         if validation_fraction > 0:
                             val_preds = self.eval(X_val)
-                            val_mse = self.error_op.eval(y_val, val_preds)
+                            val_mse = self.cost_op.eval(y_val, val_preds)
                         else:
                             val_accuracy = -1
                         log(('Loss at epoch {0} (batch {1: <9}: ' + \
                              '{2: <20} - Validation MSE: {3: <15}') \
                              .format(epoch, str(batch_id) + ')', loss, val_mse))
-        return np.array(errors)
+        return np.array(losses)
 
     def eval(self, X, start=0, stop=-1):
         """ Feeds a sample (or batch) to the model linearly from any
@@ -381,5 +381,5 @@ class NeuralStack:
             raise RequiredComponentError(Optimizer.__name__)
 
         # Check loss function
-        if self.error_op is None:
-            raise RequiredComponentError(Error.__name__)
+        if self.cost_op is None:
+            raise RequiredComponentError(Cost.__name__)

@@ -34,7 +34,7 @@ Gradient Descent.
 
 ```python
 from bgd.batch import SGDBatching
-from bgd.errors import CrossEntropy
+from bgd.cost import CrossEntropy
 from bgd.optimizers import AdamOptimizer
 
 nn.add(CrossEntropy())
