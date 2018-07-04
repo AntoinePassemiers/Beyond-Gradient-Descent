@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # nn.py
 # author : Antoine Passemiers, Robin Petit
 

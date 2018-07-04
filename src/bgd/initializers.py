@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # initializers.py
 # author : Antoine Passemiers, Robin Petit
 

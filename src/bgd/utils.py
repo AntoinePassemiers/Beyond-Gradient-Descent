@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # utils.py
 # author : Antoine Passemiers, Robin Petit
 

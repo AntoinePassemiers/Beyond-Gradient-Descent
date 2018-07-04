@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # operators.pyx
 # author : Antoine Passemiers, Robin Petit
 # distutils: language=c

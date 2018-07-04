@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os, sys
 from distutils.extension import Extension
 

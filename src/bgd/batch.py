@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # batch.py: Batching methods for neural networks
 # author : Antoine Passemiers, Robin Petit
 

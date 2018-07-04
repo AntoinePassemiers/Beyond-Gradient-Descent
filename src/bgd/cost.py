@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # cost.py
 # author : Antoine Passemiers, Robin Petit
 
