@@ -53,7 +53,6 @@ class ZeroInitializer(Initializer):
     def _initialize(self, shape):
         return np.zeros(shape)
 
-
 class UniformInitializer(Initializer):
     """ Initializer for generating arrays using a uniform distribution.
 
@@ -95,7 +94,7 @@ class GlorotUniformInitializer(Initializer):
         elif len(shape) == 2:
             limit = np.sqrt(2. / (shape[0] + shape[1]))
         else:
-            raise NotImplementedError()
+            limit = np.sqrt(len(shape) / np.sum(shape))
         return np.random.uniform(-limit, limit, size=shape)
 
 

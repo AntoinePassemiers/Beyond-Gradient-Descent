@@ -297,8 +297,8 @@ class Convolutional2D(Layer):
         self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
         self.biases = self.bias_initializer.initialize(self.n_filters, dtype=dtype)
 
-        out_height = (in_shape[1] - (self.filter_shape[0]-1)) // self.strides[0]
-        out_width = (in_shape[2] - (self.filter_shape[1]-1)) // self.strides[1]
+        out_height = (in_shape[1] - self.filter_shape[0]) // self.strides[0] + 1
+        out_width  = (in_shape[2] - self.filter_shape[1]) // self.strides[1] + 1
         out_shape = (in_shape[0], out_height, out_width, self.n_filters)
         self.out_buffer = np.zeros(out_shape, dtype=dtype)
         self.in_buffer = np.zeros(self.filters.shape, dtype=dtype)
@@ -311,7 +311,7 @@ class Convolutional2D(Layer):
             self.init_weights(np.float32, X.shape)
         if X.shape[0] > self.out_buffer.shape[0]:
             new_shape = tuple([X.shape[0]] + list(self.out_buffer.shape)[1:])
-            self.out_buffer = np.empty(new_shape)
+            self.out_buffer = np.empty(new_shape, dtype=np.float32)
 
         conv_2d_forward(self.out_buffer, X.astype(np.float32), self.filters,
                         self.biases, self.strides, self.with_bias, self.n_jobs)
