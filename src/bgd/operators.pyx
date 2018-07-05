@@ -67,8 +67,11 @@ def conv_2d_backward(data_t[:, :, :, :] output, data_t[:, :, :, :] epsilon, data
                                             output[instance, i, j, f] += epsilon[instance, h, w, c] * filters[c, i-c_strides[0]*h, j-c_strides[1]*w, f]
 
 
-def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:,:,:,:] epsilon, object strides, int num_threads):
+def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X,
+                             data_t[:,:,:,:] epsilon, object strides,
+                             object dilations, int num_threads):
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
+    cdef cnp.int_t[:] c_dilations = np.asarray(dilations, dtype=np.int)
     cdef int n_filters = output.shape[0]
     cdef int out_height = output.shape[1]
     cdef int out_width = output.shape[2]
@@ -86,12 +89,15 @@ def conv_2d_backward_weights(data_t[:,:,:,:] output, data_t[:,:,:,:] X, data_t[:
                         for k in range(eps_height):
                             for l in range(eps_width):
                                 for c in range(n_channels):
-                                    output[f, i, j, c] += epsilon[inst, k, l, f] * X[inst, k*c_strides[0] + i, l*c_strides[1] + j, c]
+                                    output[f, i, j, c] += epsilon[inst, k, l, f] * X[inst, k*c_strides[0] + i*c_dilations[0], l*c_strides[1] + j*c_dilations[1], c]
 
 
-def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :, :, :] filters, data_t[:] b, object strides, bint add_bias, int num_threads):
+def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X,
+                    data_t[:, :, :, :] filters, data_t[:] b, object strides,
+                    object dilations, bint add_bias, int num_threads):
     cdef int a, c, f, i, j, k, l
     cdef cnp.int_t[:] c_strides = np.asarray(strides, dtype=np.int)
+    cdef cnp.int_t[:] c_dilations = np.asarray(dilations, dtype=np.int)
     cdef int n_instances = X.shape[0]
     cdef int height = X.shape[1]
     cdef int width = X.shape[2]
@@ -113,7 +119,7 @@ def conv_2d_forward(data_t[:, :, :, :] output, data_t[:, :, :, :] X, data_t[:, :
                         for c in range(n_channels):
                             for k in range(filter_height):
                                 for l in range(filter_width):
-                                    output[a, i, j, f] += filters[f, k, l, c] * X[a, k+i*c_strides[0], l+j*c_strides[1], c]
+                                    output[a, i, j, f] += filters[f, k, l, c] * X[a, i*c_strides[0] + k*c_dilations[0], j*c_strides[1] + l*c_dilations[1], c]
 
 
 def conv_2d_forward_sse(cnp.float32_t[:, :, :, :] output,

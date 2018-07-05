@@ -4,7 +4,7 @@
 
 from bgd.nn import NeuralStack
 from bgd.batch import SGDBatching
-from bgd.errors import CrossEntropy
+from bgd.cost import CrossEntropy
 from bgd.layers import FullyConnected, Activation, Flatten, Convolutional2D, MaxPooling2D, Dropout
 from bgd.initializers import GaussianInitializer, UniformInitializer
 from bgd.operators import conv_2d_forward_sse, conv_2d_forward
@@ -25,7 +25,7 @@ np.random.seed(0xCAFE)
 seed(0xCAFE)
 print('')
 
-dataset = 'mnist'
+dataset = 'digits'
 
 
 def compare_convolution(nb_rep: int=100):
@@ -68,7 +68,7 @@ def compare_convolution(nb_rep: int=100):
            '\ti.e. {:g} sec/convolution. (max, min) == ({:g}, {:g})') \
            .format(end-start, nb_rep, (end-start)/nb_rep, max_time, min_time))
 
-    
+
 def test_cnn(dataset: str):
     if dataset == 'mnist':
         mnist = fetch_mldata("MNIST original")
@@ -78,19 +78,16 @@ def test_cnn(dataset: str):
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
         #X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=512)
         batch_size = 512
+        epochs = 10
 
         optimizer = AdamOptimizer(learning_rate=.005)
 
         nn = NeuralStack()
         nn.add(Convolutional2D([5, 5, 1], 32, strides=(2, 2)))
         nn.add(Activation('relu'))
-        #nn.add(MaxPooling2D([2, 2], strides=[2, 2]))
         nn.add(Convolutional2D([5, 5, 32], 32, strides=(2, 2)))
         nn.add(Activation('relu'))
-        #nn.add(MaxPooling2D([2, 2], strides=[2, 2]))
-        #nn.add(Dropout(.9))
         nn.add(Flatten())
-        #nn.add(FullyConnected(288, 64))
         nn.add(FullyConnected(512, 64))
         nn.add(Activation('sigmoid'))
         nn.add(FullyConnected(64, 10))
@@ -102,44 +99,38 @@ def test_cnn(dataset: str):
         y = digits.target
         X = X.reshape((X.shape[0], 8, 8, 1))
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-        batch_size = len(X_train)
 
         optimizer = AdamOptimizer(learning_rate=.001)
 
         nn = NeuralStack()
-        nn.add(Convolutional2D([4, 4, 1], 32, strides=(1, 1)))
+        nn.add(Convolutional2D([4, 4, 1], 32, strides=(2, 2)))
         nn.add(Activation('relu'))
         #nn.add(Convolutional2D([3, 3, 32], 32, strides=(1, 1)))
         #nn.add(Activation('relu'))
         #nn.add(Convolutional2D([2, 2, 32], 64, strides=(1, 1)))
         #nn.add(Activation('relu'))
         nn.add(Flatten())
-        nn.add(FullyConnected(800, 200))
+        nn.add(FullyConnected(288, 200))
         nn.add(Activation('relu'))
         nn.add(FullyConnected(200, 10))
         nn.add(Activation('softmax'))
 
+        batch_size = 1024
+        epochs = 50
+
     nn.add(optimizer)
     nn.add(CrossEntropy())
-    nn.add(SGDBatching(1024))
+    nn.add(SGDBatching(batch_size))
 
-    errors = nn.train(X_train, y_train, batch_size=batch_size,
-             epochs=10, print_every=1*batch_size, validation_fraction=0.0, alpha_reg=.1)
+    errors = nn.train(X_train, y_train,
+             epochs=epochs, print_every=1*batch_size, validation_fraction=0.01, alpha_reg=.005)
     accuracy_test = nn.get_accuracy(X_test, y_test, batch_size=1024)
     log('Accuracy on test: {:.3f}%'.format(accuracy_test))
-
-    '''# digits
-    nn = NeuralStack()
-    nn.add(Convolutional2D([3, 3, 1], 32, strides=[1, 1]))
-    nn.add(Flatten())
-    nn.add(Activation('relu'))
-    nn.add(FullyConnected(1152, len(np.unique(y))))
-    nn.add(Activation('softmax'))
-    errors = nn.train(X, y, epochs=100, print_every=20000)'''
 
     plt.plot(errors)
     plt.show()
 
 
 if __name__ == '__main__':
-    compare_convolution()
+    #compare_convolution()
+    test_cnn(dataset)

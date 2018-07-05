@@ -273,17 +273,20 @@ class Activation(Layer):
 
 class Convolutional2D(Layer):
 
-    def __init__(self, filter_shape, n_filters, strides=(1, 1), with_bias=True,
-                 copy=False, initializer=GlorotUniformInitializer(),
+    def __init__(self, filter_shape, n_filters, strides=(1, 1),
+                 dilations=(1, 1), with_bias=True, copy=False,
+                 initializer=GlorotUniformInitializer(),
                  bias_initializer=ZeroInitializer(), n_jobs=4):
         Layer.__init__(self, copy=copy, save_output=False)
-        self.filter_shape = filter_shape  # [height, width, n_channels]
-        self.strides = strides
+        if len(filter_shape) != 3:
+            raise ValueError('Wrong shape for filters!')
+        self.filter_shape = np.asarray(filter_shape, dtype=np.int)  # [height, width, n_channels]
+        self.strides = np.asarray(strides, dtype=np.int)
+        self.dilations = np.asarray(dilations, dtype=np.int)
         self.initializer = initializer
         self.bias_initializer = bias_initializer
         self.with_bias = with_bias
         self.n_filters = n_filters
-        assert len(filter_shape) == 3
         self.filters = None
         self.biases = None
         self.in_buffer = None
@@ -292,14 +295,23 @@ class Convolutional2D(Layer):
         self.error_buffer = None
         self.n_instances = -1
 
+    @staticmethod
+    def _get_output_shape(kernel_shape, input_shape, strides, dilations):
+        dilated_kernel_shape = 1 + dilations * (np.asarray(kernel_shape[1:-1])-1)  # F_H^\delta and F_W^\delta
+        return [
+            input_shape[0],
+            1 + (input_shape[1] - dilated_kernel_shape[0]) // strides[0],
+            1 + (input_shape[2] - dilated_kernel_shape[1]) // strides[1],
+            kernel_shape[0],
+        ]
+
     def init_weights(self, dtype, in_shape):
         filters_shape = tuple([self.n_filters] + list(self.filter_shape))
         self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
         self.biases = self.bias_initializer.initialize(self.n_filters, dtype=dtype)
 
-        out_height = (in_shape[1] - self.filter_shape[0]) // self.strides[0] + 1
-        out_width  = (in_shape[2] - self.filter_shape[1]) // self.strides[1] + 1
-        out_shape = (in_shape[0], out_height, out_width, self.n_filters)
+        out_shape = Convolutional2D._get_output_shape(filters_shape, in_shape,
+                self.strides, self.dilations)
         self.out_buffer = np.zeros(out_shape, dtype=dtype)
         self.in_buffer = np.zeros(self.filters.shape, dtype=dtype)
         self.error_buffer = np.zeros(in_shape, dtype=dtype)
@@ -314,7 +326,8 @@ class Convolutional2D(Layer):
             self.out_buffer = np.empty(new_shape, dtype=np.float32)
 
         conv_2d_forward(self.out_buffer, X.astype(np.float32), self.filters,
-                        self.biases, self.strides, self.with_bias, self.n_jobs)
+                        self.biases, self.strides, self.dilations, self.with_bias,
+                        self.n_jobs)
         #conv_2d_forward_sse(self.out_buffer, X.astype(np.float32), self.filters,
         #                    self.biases, self.strides, self.with_bias)
 
@@ -329,8 +342,26 @@ class Convolutional2D(Layer):
         else:
             a = self.current_input
 
-        conv_2d_backward_weights(self.in_buffer, a.astype(np.float32),
-                                 error.astype(np.float32), self.strides, self.n_jobs)
+        #conv_2d_backward_weights(self.in_buffer, a.astype(np.float32),
+        #                         error.astype(np.float32), self.strides,
+        #                         self.dilations, self.n_jobs)
+        delta_shape = Convolutional2D._get_output_shape(
+            error.transpose((3, 1, 2, 0)).shape,
+            a.transpose((3, 1, 2, 0)).shape,
+            self.dilations, self.strides
+        )
+        weights_buffer = np.empty(delta_shape, dtype=np.float32)
+        conv_2d_forward(weights_buffer,
+            a.transpose((3, 1, 2, 0)).astype(np.float32),
+            error.transpose((3, 1, 2, 0)).astype(np.float32),
+            self.biases,
+            self.dilations,
+            self.strides,
+            False,
+            self.n_jobs
+        )
+        weights_buffer = weights_buffer.transpose((3, 1, 2, 0))
+        ##### </test>
         if extra_info['l2_reg'] > 0:
             # Derivative of L2 regularization term
             self.in_buffer += extra_info['l2_reg'] * self.filters
@@ -340,7 +371,7 @@ class Convolutional2D(Layer):
                              self.strides, self.n_jobs
                             )
             signal = self.error_buffer[:self.n_instances, :, :, :]
-            return (signal, (self.in_buffer, db))
+            return (signal, (weights_buffer, db))
         return (None, (self.in_buffer, db))
 
     def get_parameters(self):
