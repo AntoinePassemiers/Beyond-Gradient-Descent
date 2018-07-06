@@ -4,7 +4,7 @@
 
 from bgd.nn import NeuralStack
 from bgd.batch import SGDBatching
-from bgd.errors import MSE
+from bgd.cost import MSE
 from bgd.layers import FullyConnected, Activation, Convolutional2D, GaussianNoise, Dropout
 from bgd.initializers import GaussianInitializer, UniformInitializer
 from bgd.optimizers import MomentumOptimizer, AdamOptimizer

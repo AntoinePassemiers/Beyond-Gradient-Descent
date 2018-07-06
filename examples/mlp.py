@@ -4,7 +4,7 @@
 
 from bgd.nn import NeuralStack
 from bgd.batch import SGDBatching
-from bgd.errors import CrossEntropy
+from bgd.cost import CrossEntropy
 from bgd.layers import FullyConnected, Activation, Flatten, Dropout
 from bgd.optimizers import MomentumOptimizer, AdamOptimizer, LBFGS
 from bgd.utils import log

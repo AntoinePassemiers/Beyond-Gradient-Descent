@@ -7,9 +7,10 @@ import numpy as np
 from bgd.initializers import ZeroInitializer, GlorotUniformInitializer
 from bgd.errors import NonLearnableLayerError
 # pylint: disable=import-error,no-name-in-module
-from bgd.operators import conv_2d_forward, \
-                          conv_2d_backward, conv_2d_backward_weights, \
-                          max_pooling_2d_backward, max_pooling_2d_forward
+from bgd.conv import conv_2d_forward, \
+                     conv_2d_backward, conv_2d_backward_weights
+from bgd.max_pooling import max_pooling_2d_backward, max_pooling_2d_forward
+
 
 class Layer(metaclass=ABCMeta):
     """ Base class for neural and non-neural layers.

@@ -8,7 +8,8 @@ DELETE_GENERATED_C_FILES = False
 SRC_FOLDER = "bgd"
 SUB_PACKAGES = []
 SRC_FILES = [
-    (["operators.c"], "operators"),
+    (["conv.c"], "conv"),
+    (["max_pooling.c"], "max_pooling"),
 ]
 
 COMPILE_ARGS = [

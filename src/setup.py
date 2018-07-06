@@ -14,7 +14,8 @@ except ImportError:
 
 source_folder = "bgd"
 source_files = [
-    "operators.pyx",
+    "conv.pyx",
+    "max_pooling.pyx"
 ]
 
 def configuration(parent_package = str(), top_path = None):

@@ -12,6 +12,17 @@ cimport numpy as cnp
 cnp.import_array()
 
 
+cdef fused data_t:
+    #cnp.int_t
+    #cnp.int8_t
+    #cnp.int16_t
+    #cnp.int32_t
+    #cnp.int64_t
+    cnp.float_t
+    cnp.float32_t
+    cnp.float64_t
+
+
 cdef extern from "emmintrin.h": # SSE + SSE2
     # Make __128 and __m128d behave like doubles
     #   -> Cython will find the actual definition of __128 and __m128d
