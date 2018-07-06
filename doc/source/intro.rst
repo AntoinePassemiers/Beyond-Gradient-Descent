@@ -19,7 +19,7 @@ sample in :math:`\mathcal D`), we naturally extend :math:`\mathcal N` such that:
 
 .. math::
 
-   \mathcal N(X) = [\mathcal N(X_i)]_{i=1}^k \in \mathbb R^{\ell \times n}.
+   \mathcal N(X) = [\mathcal N(X_i)]_{i=1}^k \in \mathbb R^{\ell \times m}.
 
 A linear neural network (LNN for short, also called neural stack, see
 :class:`bgd.nn.NeuralStack`) is a composition of a list of layers. Let's denote

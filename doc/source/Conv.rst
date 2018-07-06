@@ -83,7 +83,7 @@ Therefore:
    \partial_{\omega^{(k)}_\alpha}\mathcal L &= \sum_{\beta_0,\beta_1,\beta_2,\beta_3}\varepsilon^{(k)}_\beta\partial_{\omega^{(k)}_\alpha}X^{(k)}_\beta
    = \sum_{\beta_0,\beta_1,\beta_2}\varepsilon^{(k)}_{\beta_0,\beta_1,\beta_2,\alpha_0}X^{(k)}_{\beta_0,\sigma_1\beta_1 + \delta_1\alpha_1,\sigma_2\beta_2 + \delta_2\alpha_2,\alpha_3} \\
    &= \sum_{\beta_0,\beta_1,\beta_2}\pi_{\tau_{0,3}}\varepsilon^{(k)}_{\alpha_0,\beta_1,\beta_2,\beta_0}\pi_{\tau_{0,3}}X^{(k-1)}_{\alpha_3,\sigma_1\beta_1 + \delta_1\alpha_1,\sigma_2\beta_2 + \delta_2\alpha_2,\beta_0}
-   = \pi_{\tau_{0,3}}\Lambda^{(k)}_{(\pi_{\tau_{0,3}}\varepsilon^{(k)}, \mathbf{0})}(\pi_{\tau_{0,3}}X^{(k-1)}; \delta, \sigma),
+   = \pi_{\tau_{0,3}}\Lambda^{(k)}_{(\pi_{\tau_{0,3}}\varepsilon^{(k)}, \mathbf{0})}(\pi_{\tau_{0,3}}X^{(k-1)}; \delta, \sigma)_\alpha,
 
 i.e. the backward pass is also a convolution where strides and dilations have been swapped and without biases.
 
