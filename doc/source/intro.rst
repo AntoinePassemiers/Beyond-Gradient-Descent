@@ -19,7 +19,7 @@ sample in :math:`\mathcal D`), we naturally extend :math:`\mathcal N` such that:
 
 .. math::
 
-   \mathcal N(X) = [\mathcal N(X_i)]_{i=1}^k \in \mathbb R^{\ell \times n}.
+   \mathcal N(X) = [\mathcal N(X_i)]_{i=1}^k \in \mathbb R^{\ell \times m}.
 
 A linear neural network (LNN for short, also called neural stack, see
 :class:`bgd.nn.NeuralStack`) is a composition of a list of layers. Let's denote
@@ -47,10 +47,21 @@ The neural net is therefore defined as the composition of all the layers:
 
    \mathcal N(X) := \Big(\bigcirc_{k=1}^K\Lambda_{\theta^{(k)}}^{(k)}\Big)(X),
 
-where the composition must be read :math:`\Lambda^{(K)}_{\theta^{(k)}} \circ \ldots \Lambda^{(1)}_{\theta^{1}}`
+where the composition must be read :math:`\Lambda^{(K)}_{\theta^{(k)}} \circ \ldots \circ \Lambda^{(1)}_{\theta^{(1)}}`
 so that dimensions stay consistent.
 
 We also write :math:`X \in \mathbb R^{\ell \times n}` for a batch input of the LNN.
 
 For sake of convenience, for :math:`k \in \{1, \ldots, K\}`, we write:
 :math:`X^{(k)} := \Lambda_{\theta^{(k)}}^{(k)}(X^{(k-1)})` and :math:`X^{(0)} := X`.
+
+For :math:`X` a rank :math:`n` tensor and :math:`\sigma \in \mathfrak S_n` a permutation on
+:math:`n` elements, we introduce the following notation:
+
+.. math::
+
+   \pi_\sigma X := \pi_\sigma(X) := [X_{\sigma\alpha}]_\alpha,
+
+an extension of the transposition of matrices: if :math:`\sigma = \tau_{i,j}`, then
+:math:`\pi_\sigma X` is still a rank :math:`n` tensor but whose indices :math:`i`
+and :math:`j` have been swapped.
