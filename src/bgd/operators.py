@@ -1,7 +1,7 @@
 # operators.py
 # author : Antoine Passemiers, Robin Petit
 
-from layers import Layer
+from bgd.layers import Layer
 
 import numpy as np
 
