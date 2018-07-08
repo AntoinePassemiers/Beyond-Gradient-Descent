@@ -35,7 +35,7 @@ For the weights update:
                                          &= \sum_{\alpha,\beta = (1,1)}^{(\ell, n^{(k)})}\varepsilon^{(k)}_{\alpha,\beta}X_{\alpha,i}\delta_\beta^j
    = \sum_{\alpha=1}^\ell\varepsilon^{(k)}_{\alpha,j}X_{\alpha,i} = \Big(X'\varepsilon^{(k)}\Big)_{i,j}.
 
-Therefore :math:`\nabla_A^{(k)}\mathcal L = X'\varepsilon`.
+Therefore :math:`\nabla_{A^{(k)}}\mathcal L = X'\varepsilon`.
 
 .. math::
 

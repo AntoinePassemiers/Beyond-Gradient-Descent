@@ -1,14 +1,15 @@
 REMOTE_ORIGIN=git@github.com:antoinepassemiers/Beyond-Gradient-Descent.git
 DOCS_DIR     =../BGD-docs/
-THIS_FILE    =$(lastword $(MAKEFILE_LIST))
 
 bgd:
 	make -C src/ bgd
 
 ${DOCS_DIR}:
 	mkdir -p $@ && \
-	cd $@ && \
-	git clone -b gh-pages --single-branch ${REMOTE_ORIGIN} html 
+	mkdir -p $@/html && \
+	cd $@/html && \
+	git init && \
+	git remote add origin ${REMOTE_ORIGIN}
 
 doc: | ${DOCS_DIR}
 	make -C src/ build
@@ -16,13 +17,10 @@ doc: | ${DOCS_DIR}
 	make -C doc/ html
 	rm -f src/bgd/*.so
 
-pushdoc: | ${DOCS_DIR}
+pushdoc: doc
 	cd ${DOCS_DIR}/html && \
-	git clean -xdf && \
-	git pull origin gh-pages && \
-	${MAKE} -f ${THIS_FILE} doc && \
 	git add . && \
 	git commit -m "Build the docs" && \
-	git push origin gh-pages
+	git push -f origin HEAD:gh-pages
 
 .PHONY: bgd doc pushdoc
