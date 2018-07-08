@@ -2,9 +2,17 @@ language: python
 python:
   - "2.7"
   - "3.6"
+addons:
+  apt:
+    packages:
+    - gfortran
+    - libatlas-dev
+    - libatlas-base-dev
+    - liblapack-dev
+    - libgmp-dev
+    - libmpfr-dev
 before_install: 
   - sudo pip install Cython
-  - pip uninstall numpy -y
-  - pip install -I numpy==1.8.2
+  - pip install -U --only-binary=numpy,scipy numpy scipy
 install: make
 script: nosetests -v test/test.py
