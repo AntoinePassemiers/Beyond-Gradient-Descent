@@ -5,7 +5,7 @@ from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup as np_setup
 
 DELETE_GENERATED_C_FILES = False
-SRC_FOLDER = "src/bgd"
+SRC_FOLDER = "bgd"
 SUB_PACKAGES = []
 SRC_FILES = [
     (["conv.c"], "conv"),
