@@ -1,4 +1,4 @@
-REMOTE_ORIGIN=git@github.com:antoinepassemiers/Beyond-Gradient-Descent.git
+REMOTE_ORIGIN=git@github.com:antoinepassemiers/antoinepassemiers.github.io.git
 DOCS_DIR     =../BGD-docs/
 
 bgd:

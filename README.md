@@ -1,3 +1,4 @@
+[![Travis-CI Build Status](https://travis-ci.org/AntoinePassemiers/Beyond-Gradient-Descent.svg?branch=master)](https://travis-ci.org/AntoinePassemiers/Beyond-Gradient-Descent)
 # BGD - Second order optimization for neural networks
 
 Quick Example
