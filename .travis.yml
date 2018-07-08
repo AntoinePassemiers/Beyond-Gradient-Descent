@@ -2,8 +2,6 @@ language: python
 python:
   - "2.7"
   - "3.6"
-before_install:
-  sudo pip install Cython numpy scipy
-script: 
-  make
-  nosetests -v test/test.py
+before_install: sudo pip install Cython numpy scipy
+install: make
+script: nosetests -v test/test.py
