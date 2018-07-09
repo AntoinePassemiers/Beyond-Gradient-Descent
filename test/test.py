@@ -10,4 +10,4 @@ def test_useless():
 
 def test_dependencies():
     a = np.empty(50)
-    assert(Activation().forward(a))
+    assert(Activation().forward(a) is not None)
