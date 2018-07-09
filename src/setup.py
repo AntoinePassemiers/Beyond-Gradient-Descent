@@ -10,6 +10,8 @@ try:
     USE_CYTHON = True
 except ImportError:
     USE_CYTHON = False
+    print("[Warning] Cython is not available")
+    print("[Warning] setup.py will look for source C files instead")
 
 
 source_folder = "bgd"
@@ -18,14 +20,13 @@ source_files = [
     "max_pooling.pyx"
 ]
 
-def configuration(parent_package = str(), top_path = None):
+def configuration(parent_package=str(), top_path=None):
     config = Configuration(None, parent_package, top_path)
-    config.set_options(ignore_setup_xxx_py = True,
-                       assume_default_configuration = True,
-                       delegate_options_to_subpackages = True,
-                       quiet = True)
+    config.set_options(ignore_setup_xxx_py=True,
+                       assume_default_configuration=True,
+                       delegate_options_to_subpackages=True,
+                       quiet=True)
     config.add_subpackage("bgd")
-
     return config
 
 setup_args = {
@@ -56,7 +57,7 @@ for source_file in source_files:
     extensions[-1].cython_directives = {'embedsignature': True}
 
 build_cmds = {'install', 'build', 'build_ext'}
-GOT_BUILD_CMD = len(set(sys.argv) & build_cmds)  != 0
+GOT_BUILD_CMD = len(set(sys.argv) & build_cmds) != 0
 if USE_CYTHON and GOT_BUILD_CMD:
     # Setting "bgd" as the root package
     # This is to prevent cython from generating inappropriate variable names
@@ -69,7 +70,7 @@ if USE_CYTHON and GOT_BUILD_CMD:
     print('\t\tCYTHONINZING')
     extensions = cythonize(
         extensions,
-        language = "c",
+        language="c",
         compiler_directives={'embedsignature': True}
     )
 

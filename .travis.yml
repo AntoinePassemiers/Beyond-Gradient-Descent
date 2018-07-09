@@ -1,6 +1,5 @@
 language: python
 python:
-  - "2.7"
   - "3.6"
 addons:
   apt:
@@ -14,7 +13,7 @@ addons:
 before_install:
   - sudo pip install Cython
   - pip install -U --only-binary=numpy,scipy numpy scipy
-  - cd src
 install: make
-after_install: cd ..
 script: nosetests -v test/test.py
+notifications:
+  email: false
