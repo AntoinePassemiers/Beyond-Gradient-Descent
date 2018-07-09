@@ -1,5 +1,6 @@
 language: python
 python:
+  - "2.7"
   - "3.6"
 addons:
   apt:
@@ -14,6 +15,6 @@ before_install:
   - pip install -q cython
   - pip install -U --only-binary=numpy,scipy numpy scipy
 install: make
-script: python test/test.py
+script: pytest test/test.py
 notifications:
   email: false
