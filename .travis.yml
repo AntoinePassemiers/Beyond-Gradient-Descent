@@ -11,7 +11,7 @@ addons:
     - libgmp-dev
     - libmpfr-dev
 before_install:
-  - sudo pip install Cython
+  - pip install -q cython
   - pip install -U --only-binary=numpy,scipy numpy scipy
 install: make
 script: nosetests -v test/test.py
