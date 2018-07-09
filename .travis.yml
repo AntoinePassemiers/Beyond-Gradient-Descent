@@ -2,18 +2,8 @@ language: python
 python:
   - "2.7"
   - "3.6"
-addons:
-  apt:
-    packages:
-    - gfortran
-    - libatlas-dev
-    - libatlas-base-dev
-    - liblapack-dev
-    - libgmp-dev
-    - libmpfr-dev
 before_install:
-  - pip install -q cython
-  - pip install -U --only-binary=numpy,scipy numpy scipy
+  - pip install -q cython numpy
 install: make
 script: pytest test/test.py
 notifications:
