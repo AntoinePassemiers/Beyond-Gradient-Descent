@@ -22,7 +22,7 @@ def test_mlp_on_xor_problem():
     X = [[0, 0], [0, 1], [1, 0], [1, 1]]
     y = [0, 1, 1, 0]
     nn.train(X, y, alpha_reg=0, epochs=1000, print_every=800)
-    predictions = nn.eval(X)
+    predictions = np.squeeze(nn.eval(X))
     assert(np.array_equal(predictions > 0.5, y))
 
 
