@@ -23,7 +23,9 @@ def test_mlp_on_xor_problem():
     y = [0, 1, 1, 0]
     nn.train(X, y, alpha_reg=0, epochs=1000, print_every=800)
     predictions = nn.eval(X)
-    print(np.array_equal(predictions > 0.5, y))
+    assert(np.array_equal(predictions > 0.5, y))
+
+
 def test_learnable():
     non_learnable_layers = list()
     non_learnable_layers.append(Activation(function='tanh'))
