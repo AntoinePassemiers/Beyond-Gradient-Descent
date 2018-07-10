@@ -2,7 +2,7 @@
 # author : Antoine Passemiers, Robin Petit
 
 from bgd.batch import Batching
-from bgd.cost import Cost, CrossEntropy
+from bgd.cost import ClassificationCost, Cost, CrossEntropy
 from bgd.errors import RequiredComponentError, WrongComponentTypeError
 from bgd.layers import Layer, Dropout
 from bgd.optimizers import Optimizer
@@ -255,21 +255,28 @@ class NeuralStack:
             >>> print('Loss over time:', losses)
             Errors: [ 2.50539121  2.28391007  2.40779468 ...,  0.11655055  0.12436938  0.09155006]
         """
-        losses = list()
+        # Check arrays
+        X, y = np.asarray(X), np.asarray(y)
+
+        # Check components
+        self.check_components()
 
         # Split data into training data and validation data for early stopping
+        if len(X) < 50:
+            validation_fraction = 0
         if validation_fraction > 0:
             X_train, y_train, X_val, y_val = split_train_val(X, y, validation_fraction)
         else:
             X_train, y_train = X, y
 
         # Binarize labels if classification task
-        if isinstance(self.cost_op, CrossEntropy):
+        if isinstance(self.cost_op, ClassificationCost):
             y_train = binarize_labels(y_train)
 
         # Deactivate signal propagation though first layer
         self.layers[0].deactivate_propagation()
 
+        losses = list()
         seen_instances = 0
         for epoch in range(epochs):
             batch_id = 0
@@ -304,24 +311,15 @@ class NeuralStack:
                 seen_instances += self.batch_op.batch_size
                 if seen_instances % print_every == 0:
                     batch_id += 1
-                    # Warning: This code section is ugly
-                    if isinstance(self.cost_op, CrossEntropy):
-                        if validation_fraction > 0:
-                            val_accuracy = self.get_accuracy(X_val, y_val)
-                        else:
-                            val_accuracy = -1
-                        log(('Loss at epoch {0} (batch {1: <9}:' + \
-                             ' {2: <20} - Validation accuracy: {3:.1f}') \
-                             .format(epoch, str(batch_id) + ')', loss, val_accuracy))
+                    if validation_fraction > 0:
+                        val_preds = self.eval(X_val)
+                        val_cost = self.cost_op.eval(y_val, val_preds)
                     else:
-                        if validation_fraction > 0:
-                            val_preds = self.eval(X_val)
-                            val_mse = self.cost_op.eval(y_val, val_preds)
-                        else:
-                            val_accuracy = -1
-                        log(('Loss at epoch {0} (batch {1: <9}: ' + \
-                             '{2: <20} - Validation MSE: {3: <15}') \
-                             .format(epoch, str(batch_id) + ')', loss, val_mse))
+                        val_cost = -1
+                    # TODO: for cross-entropy: print accuracy instead (without hardcoding)
+                    log(('Loss at epoch {0} (batch {1: <9}: ' + \
+                         '{2: <20} - Validation %s: {3: <15}') \
+                         .format(epoch, str(batch_id) + ')', loss, self.cost_op.name(), val_cost))
         return np.array(losses)
 
     def eval(self, X, start=0, stop=-1):
@@ -343,6 +341,7 @@ class NeuralStack:
                     Output of the propagation of X through each layer
                     of the model.
         """
+        X = np.asarray(X)
         if stop == -1 or stop > len(self.layers):
             stop = len(self.layers)
         for i in range(start, stop):

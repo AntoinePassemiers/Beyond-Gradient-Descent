@@ -54,9 +54,21 @@ class Cost(metaclass=ABCMeta):
         """ Wrapped method for evaluating the error gradient.
         Subclasses must override this method. """
         pass
+    
+    @abstractmethod
+    def name(self):
+        pass
 
 
-class MSE(Cost):
+class ClassificationCost(Cost):
+    pass
+
+
+class RegressionCost(Cost):
+    pass
+
+
+class MSE(RegressionCost):
     r""" Differentiable Mean Squared Error operator.
 
     .. math::
@@ -95,10 +107,15 @@ class MSE(Cost):
                     The gradient of the error for each sample
                     of the batch. `shape == (len(y),)`
         """
+        if len(y.shape) < len(y_hat.shape):
+            y = y[..., np.newaxis]
         return y_hat - y
+    
+    def name(self):
+        return 'MSE'
 
 
-class CrossEntropy(Cost):
+class CrossEntropy(ClassificationCost):
     r""" Differentiable cross-entropy operator.
 
     .. math::
@@ -147,3 +164,6 @@ class CrossEntropy(Cost):
                     of the batch. `shape == (len(y),)`
         """
         return y_hat - y
+    
+    def name(self):
+        return 'cross-entropy'
