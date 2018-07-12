@@ -1,6 +1,10 @@
 # operators.py
 # author : Antoine Passemiers, Robin Petit
 
+__all__ = [
+    'Log', 'Exp'
+]
+
 from bgd.layers import Layer
 
 import numpy as np

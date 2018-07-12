@@ -1,6 +1,10 @@
 # optimizers.py
 # author : Antoine Passemiers, Robin Petit
 
+__all__ = [
+    'MomentumOptimizer', 'AdamOptimizer', 'LBFGS'
+]
+
 from abc import ABCMeta, abstractmethod
 from operator import mul
 from functools import reduce

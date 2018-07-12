@@ -1,6 +1,11 @@
 # layers.py
 # author : Antoine Passemiers, Robin Petit
 
+__all__ = [
+    'FullyConnected', 'Activation', 'Convolutional2D', 'MaxPooling2D',
+    'Dropout', 'GaussianNoise', 'Flatten'
+]
+
 from abc import ABCMeta, abstractmethod
 import numpy as np
 

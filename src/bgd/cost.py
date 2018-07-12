@@ -1,6 +1,8 @@
 # cost.py
 # author : Antoine Passemiers, Robin Petit
 
+__all__ = ['MSE', 'CrossEntropy']
+
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
@@ -54,7 +56,7 @@ class Cost(metaclass=ABCMeta):
         """ Wrapped method for evaluating the error gradient.
         Subclasses must override this method. """
         pass
-    
+
     @abstractmethod
     def name(self):
         pass
@@ -110,7 +112,7 @@ class MSE(RegressionCost):
         if len(y.shape) < len(y_hat.shape):
             y = y[..., np.newaxis]
         return y_hat - y
-    
+
     def name(self):
         return 'MSE'
 
@@ -164,6 +166,6 @@ class CrossEntropy(ClassificationCost):
                     of the batch. `shape == (len(y),)`
         """
         return y_hat - y
-    
+
     def name(self):
         return 'cross-entropy'

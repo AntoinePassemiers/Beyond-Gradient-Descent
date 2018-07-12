@@ -4,7 +4,7 @@
 import numpy as np
 
 from bgd.batch import SGDBatching
-from bgd.cost import CrossEntropy, MSE
+from bgd.cost import MSE
 from bgd.layers import *
 from bgd.nn import NeuralStack
 from bgd.optimizers import MomentumOptimizer
@@ -23,8 +23,7 @@ def test_mlp_on_xor_problem():
     y = [0, 1, 1, 0]
     nn.train(X, y, alpha_reg=0, epochs=1000, print_every=800)
     predictions = np.squeeze(nn.eval(X))
-    assert(np.array_equal(predictions > 0.5, y))
-
+    assert np.array_equal(predictions > 0.5, y)
 
 def test_learnable():
     non_learnable_layers = list()
@@ -35,9 +34,10 @@ def test_learnable():
     non_learnable_layers.append(MaxPooling2D((2, 2)))
     non_learnable_layers.append(Lambda(lambda x: 2*x, lambda x: 0.5*x))
     for layer in non_learnable_layers:
-        assert(not layer.learnable())
+        assert not layer.learnable()
     learnable_layers = list()
     learnable_layers.append(Convolutional2D((3, 3, 4), 16))
     learnable_layers.append(FullyConnected(50, 70))
     for layer in learnable_layers:
-        assert(layer.learnable())
+        assert layer.learnable()
+

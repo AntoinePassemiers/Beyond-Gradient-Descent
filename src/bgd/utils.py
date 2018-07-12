@@ -1,6 +1,10 @@
 # utils.py
 # author : Antoine Passemiers, Robin Petit
 
+__all__ = [
+    'log', 'now'
+]
+
 from datetime import datetime as dt
 
 def log(txt, end='\n'):

@@ -1,6 +1,11 @@
 # errors.py
 # author : Antoine Passemiers, Robin Petit
 
+__all__ = [
+    'RequiredComponentError', 'WrongComponentTypeError',
+    'NonLearnableLayerError'
+]
+
 class RequiredComponentError(Exception):
     """ Exception raised when a :class:`bgd.nn.NeuralStack`
     hasn't been setup properly and at least a component is missing.

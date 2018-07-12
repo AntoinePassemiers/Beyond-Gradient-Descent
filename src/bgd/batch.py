@@ -1,6 +1,8 @@
 # batch.py: Batching methods for neural networks
 # author : Antoine Passemiers, Robin Petit
 
+__all__ = ['SGDBatching']
+
 from abc import ABCMeta, abstractmethod
 import numpy as np
 

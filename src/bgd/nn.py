@@ -1,6 +1,10 @@
 # nn.py
 # author : Antoine Passemiers, Robin Petit
 
+__all__ = [
+    'split_train_val', 'binarize_labels', 'NeuralStack'
+]
+
 from bgd.batch import Batching
 from bgd.cost import ClassificationCost, Cost, CrossEntropy
 from bgd.errors import RequiredComponentError, WrongComponentTypeError

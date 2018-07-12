@@ -1,6 +1,11 @@
 # initializers.py
 # author : Antoine Passemiers, Robin Petit
 
+__all__ = [
+    'ZeroInitializer', 'UniformInitializer', 'GlorotUniformInitializer',
+    'GaussianInitializer', 'GlorotGaussianInitializer'
+]
+
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
