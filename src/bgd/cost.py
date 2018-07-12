@@ -5,7 +5,7 @@ __all__ = ['MSE', 'CrossEntropy']
 
 from abc import ABCMeta, abstractmethod
 import numpy as np
-
+import sys
 
 class Cost(metaclass=ABCMeta):
     """ Base class for error operators.
@@ -57,17 +57,37 @@ class Cost(metaclass=ABCMeta):
         Subclasses must override this method. """
         pass
 
+    def print_fitness(self, y, y_hat, end='\n', files=sys.stdout):
+        """ Prints a measure of the fitness/cost. """
+        if not isinstance(files, (list, tuple, set)):
+            files = (files,)
+        self._print_fitness(y, y_hat, end, files)
+
+    @abstractmethod
+    def _print_fitness(self, y, y_hat, end, files):
+        pass
+
     @abstractmethod
     def name(self):
         pass
 
 
 class ClassificationCost(Cost):
-    pass
+    def _print_fitness(self, y, y_hat, end, files):
+        for f in files:
+            f.write('accuracy: {:.3f}%{}' \
+                    .format(ClassificationCost.accuracy(y, y_hat), end))
+
+    @staticmethod
+    def accuracy(y, y_hat):
+        return 100 * (y_hat.argmax(axis=1) == y).sum() / len(y_hat)
 
 
 class RegressionCost(Cost):
-    pass
+    def _print_fitness(self, y, y_hat, end, files):
+        for f in files:
+            f.write('{}: {:.3f}{}' \
+                    .format(self.name(), self.eval(y, y_hat), end))
 
 
 class MSE(RegressionCost):

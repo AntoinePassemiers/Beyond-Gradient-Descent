@@ -5,14 +5,14 @@ __all__ = [
     'split_train_val', 'binarize_labels', 'NeuralStack'
 ]
 
+import numpy as np
+
 from bgd.batch import Batching
-from bgd.cost import ClassificationCost, Cost, CrossEntropy
+from bgd.cost import ClassificationCost, Cost
 from bgd.errors import RequiredComponentError, WrongComponentTypeError
 from bgd.layers import Layer, Dropout
 from bgd.optimizers import Optimizer
 from bgd.utils import log
-
-import numpy as np
 
 def split_train_val(X, y, validation_fraction):
     """ Splits randomly the dataset (X, y) into a training set
@@ -202,7 +202,7 @@ class NeuralStack:
         return loss
 
     def train(self, X, y, epochs=1000, alpha_reg=.0001,
-              print_every=50, validation_fraction=0.1):
+              print_every=1, validation_fraction=0.1):
         """ Trains the model on samples X and labels y. Optimize the model
         parameters so that the loss is minimized on this dataset.
         The validation fraction *must* be in [0, 1] (0 to not evaluate the
@@ -219,9 +219,9 @@ class NeuralStack:
             alpha_reg (float):
                 L2 regularization alpha parameter (0 if no L2).
             print_every (int):
-                Number of instances between two prints of model state and
+                Number of batches between two prints of model state and
                 evaluations on the intermediate validation set (negative
-                number if none is wanted).
+                number if none is wanted). Defaults to 1.
             validation_fraction (float):
                 Proportion of samples to be kept for validation.
 
@@ -246,16 +246,26 @@ class NeuralStack:
             >>> nn.add(AdamOptimizer())
             >>> nn.add(SGDBatching(512))
             >>> losses = nn.train(X, y)
-            Loss at epoch 93 (batch 1)       : 0.4746132147046453   - Validation accuracy: 95.0
-            Loss at epoch 187 (batch 1)       : 0.31422001176102426  - Validation accuracy: 96.7
-            Loss at epoch 281 (batch 1)       : 0.2320271116849095   - Validation accuracy: 95.6
-            Loss at epoch 374 (batch 1)       : 0.2071083076653019   - Validation accuracy: 96.1
-            Loss at epoch 468 (batch 1)       : 0.19040431125095156  - Validation accuracy: 95.6
-            Loss at epoch 562 (batch 1)       : 0.170319350663334    - Validation accuracy: 96.1
-            Loss at epoch 656 (batch 1)       : 0.1645264159422448   - Validation accuracy: 95.0
-            Loss at epoch 749 (batch 1)       : 0.1481725308805749   - Validation accuracy: 95.6
-            Loss at epoch 843 (batch 1)       : 0.1347951182675034   - Validation accuracy: 95.0
-            Loss at epoch 937 (batch 1)       : 0.12705829279032987  - Validation accuracy: 95.0
+            Loss at epoch 49 (batch 2): 1.2941039726880612   - Validation accuracy: 83.333%
+            Loss at epoch 99 (batch 2): 0.764482839362229    - Validation accuracy: 96.111%
+            Loss at epoch 149 (batch 2): 0.5154527368075816   - Validation accuracy: 97.222%
+            Loss at epoch 199 (batch 2): 0.3979498104086121   - Validation accuracy: 97.778%
+            Loss at epoch 249 (batch 2): 0.32569535096131924  - Validation accuracy: 97.778%
+            Loss at epoch 299 (batch 2): 0.2748402661346476   - Validation accuracy: 97.778%
+            Loss at epoch 349 (batch 2): 0.2555267910622358   - Validation accuracy: 97.778%
+            Loss at epoch 399 (batch 2): 0.22863001357754167  - Validation accuracy: 97.778%
+            Loss at epoch 449 (batch 2): 0.22746067257186584  - Validation accuracy: 97.778%
+            Loss at epoch 499 (batch 2): 0.22220948073377536  - Validation accuracy: 97.778%
+            Loss at epoch 549 (batch 2): 0.2089401746378744   - Validation accuracy: 98.333%
+            Loss at epoch 599 (batch 2): 0.20035077161054704  - Validation accuracy: 98.333%
+            Loss at epoch 649 (batch 2): 0.1867468456143161   - Validation accuracy: 98.333%
+            Loss at epoch 699 (batch 2): 0.17347271604108705  - Validation accuracy: 98.333%
+            Loss at epoch 749 (batch 2): 0.15376433332896908  - Validation accuracy: 98.333%
+            Loss at epoch 799 (batch 2): 0.15436015140582668  - Validation accuracy: 98.333%
+            Loss at epoch 849 (batch 2): 0.13860411664942396  - Validation accuracy: 98.889%
+            Loss at epoch 899 (batch 2): 0.133165375570591    - Validation accuracy: 98.333%
+            Loss at epoch 949 (batch 2): 0.12890010110436428  - Validation accuracy: 98.333%
+            Loss at epoch 999 (batch 2): 0.12433454132628034  - Validation accuracy: 98.333%
             >>> print('Loss over time:', losses)
             Errors: [ 2.50539121  2.28391007  2.40779468 ...,  0.11655055  0.12436938  0.09155006]
         """
@@ -281,12 +291,14 @@ class NeuralStack:
         self.layers[0].deactivate_propagation()
 
         losses = list()
-        seen_instances = 0
+        nb_batches = 0
         for epoch in range(epochs):
             batch_id = 0
             self.batch_op.start(X_train, y_train)
             next_batch = self.batch_op.next()
             while next_batch:
+                batch_id += 1
+                nb_batches += 1
                 # Retrieve batch for next iteration
                 (batch_x, batch_y) = next_batch
                 next_batch = self.batch_op.next()
@@ -312,18 +324,12 @@ class NeuralStack:
                 self.optimizer.update(F)
                 self.optimizer.flush()
 
-                seen_instances += self.batch_op.batch_size
-                if seen_instances % print_every == 0:
-                    batch_id += 1
+                if nb_batches % print_every == 0:
+                    log('Loss at epoch {} (batch {}): {: <20}' \
+                        .format(epoch, batch_id, loss),
+                        end=' - Validation ' if validation_fraction > 0 else '\n')
                     if validation_fraction > 0:
-                        val_preds = self.eval(X_val)
-                        val_cost = self.cost_op.eval(y_val, val_preds)
-                    else:
-                        val_cost = -1
-                    # TODO: for cross-entropy: print accuracy instead (without hardcoding)
-                    log(('Loss at epoch {0} (batch {1: <9}: ' + \
-                         '{2: <20} - Validation %s: {3: <15}') \
-                         .format(epoch, str(batch_id) + ')', loss, self.cost_op.name(), val_cost))
+                        self.cost_op.print_fitness(y_val, self.eval(X_val))
         return np.array(losses)
 
     def eval(self, X, start=0, stop=-1):

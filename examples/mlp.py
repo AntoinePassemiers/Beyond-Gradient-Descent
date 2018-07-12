@@ -67,4 +67,4 @@ def train_mlp(use_lbfgs=True):
 
 
 if __name__ == "__main__":
-    train_mlp(use_lbfgs=True)
+    train_mlp(use_lbfgs=False)

@@ -3,7 +3,7 @@
 
 __all__ = [
     'FullyConnected', 'Activation', 'Convolutional2D', 'MaxPooling2D',
-    'Dropout', 'GaussianNoise', 'Flatten'
+    'Dropout', 'GaussianNoise', 'Flatten', 'Lambda'
 ]
 
 from abc import ABCMeta, abstractmethod
