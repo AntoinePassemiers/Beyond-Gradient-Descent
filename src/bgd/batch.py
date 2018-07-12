@@ -1,3 +1,8 @@
+""" This module contains all the different batching methods
+that are implemented. Any new batching method needs to inherit
+from :class:`bgd.batch.Batching` and to implement its abstract
+methods (:obj:`_start` and :obj:`next`). """
+
 # batch.py: Batching methods for neural networks
 # author : Antoine Passemiers, Robin Petit
 

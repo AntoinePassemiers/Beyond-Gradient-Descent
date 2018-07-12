@@ -1,3 +1,9 @@
+""" This module contains all the layers that are implemented.
+Any layer needs to inherit from :class:`bgd.layers.Layer` and
+to implement its abstract methods (:obj:`_forward`, :obj:`backward`
+and :obj:`get_parameters`, even by returning None if layer is
+non-parametric). """
+
 # layers.py
 # author : Antoine Passemiers, Robin Petit
 
@@ -334,8 +340,6 @@ class Convolutional2D(Layer):
         conv_2d_forward(self.out_buffer, X.astype(np.float32), self.filters,
                         self.biases, self.strides, self.dilations, self.with_bias,
                         self.n_jobs)
-        #conv_2d_forward_sse(self.out_buffer, X.astype(np.float32), self.filters,
-        #                    self.biases, self.strides, self.with_bias)
 
         self.n_instances = X.shape[0]
         return self.out_buffer[:X.shape[0], :, :, :]
@@ -348,9 +352,6 @@ class Convolutional2D(Layer):
         else:
             a = self.current_input
 
-        #conv_2d_backward_weights(self.in_buffer, a.astype(np.float32),
-        #                         error.astype(np.float32), self.strides,
-        #                         self.dilations, self.n_jobs)
         delta_shape = Convolutional2D._get_output_shape(
             error.transpose((3, 1, 2, 0)).shape,
             a.transpose((3, 1, 2, 0)).shape,
@@ -367,7 +368,6 @@ class Convolutional2D(Layer):
             self.n_jobs
         )
         weights_buffer = weights_buffer.transpose((3, 1, 2, 0))
-        ##### </test>
         if extra_info['l2_reg'] > 0:
             # Derivative of L2 regularization term
             self.in_buffer += extra_info['l2_reg'] * self.filters

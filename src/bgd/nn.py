@@ -1,3 +1,8 @@
+""" This module contains the :class:`bgd.nn.NeuralStack`
+class that represents a linear neural network (LNN).
+
+Any other model of neural nets shall be written down here. """
+
 # nn.py
 # author : Antoine Passemiers, Robin Petit
 
@@ -46,7 +51,7 @@ def split_train_val(X, y, validation_fraction):
         ValueError:
             If validation_fraction is not in [0, 1].
     """
-    if not (0 <= validation_fraction <= 1):
+    if not 0 <= validation_fraction <= 1:
         raise ValueError('{:g} is not a valid fraction'.format(validation_fraction))
     split = int(len(X) * (1. - validation_fraction))
     indices = np.arange(len(X))
@@ -148,30 +153,6 @@ class NeuralStack:
             self.batch_op = component
         else:
             raise WrongComponentTypeError("Unknown component type")
-
-    def get_accuracy(self, X_val, y_val, batch_size=256):
-        """ Returns the percentage of samples correctly labeled by the model.
-
-        Args:
-            X_val (:obj:`np.ndarray`):
-                Samples to label.
-            y_val (:obj:`np.ndarray`):
-                Labels of the provided samples.
-            batch_size (int):
-                Number of samples from X_val to insert per batch.
-
-        Returns:
-            float:
-                accuracy:
-                    Percentage of correctly labeled samples (in [0, 100]).
-        """
-        nb_correct = 0
-        for i in np.arange(0, X_val.shape[0], batch_size):
-            indices = i + np.arange(min(batch_size, X_val.shape[0]-i))
-            val_probs = self.eval(X_val[indices])
-            assert len(val_probs) == len(indices)
-            nb_correct += (val_probs.argmax(axis=1) == y_val[indices]).sum()
-        return 100 * nb_correct / X_val.shape[0]
 
     def eval_loss(self, batch_y, predictions, alpha):
         """ Returns the loss value of the output computed by the model

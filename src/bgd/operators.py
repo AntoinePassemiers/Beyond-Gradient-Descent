@@ -1,3 +1,6 @@
+""" This module contains all the layers that are simple
+mathematical operators. """
+
 # operators.py
 # author : Antoine Passemiers, Robin Petit
 

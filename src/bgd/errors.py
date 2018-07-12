@@ -1,3 +1,6 @@
+""" This module contains all the exceptions that are specific
+to BGD. """
+
 # errors.py
 # author : Antoine Passemiers, Robin Petit
 

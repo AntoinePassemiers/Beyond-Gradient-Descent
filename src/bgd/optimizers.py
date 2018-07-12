@@ -1,3 +1,8 @@
+""" This module contains all the optimizers that are implemented.
+Any optimizer implemented needs to inherit from
+:class:`bgd.optimizers.Optimizer` and to implement its abstract
+method (:obj:`update`). """
+
 # optimizers.py
 # author : Antoine Passemiers, Robin Petit
 

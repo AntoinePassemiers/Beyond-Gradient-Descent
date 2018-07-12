@@ -1,3 +1,6 @@
+""" This module contains all the small and useful functions.
+All the... utils... """
+
 # utils.py
 # author : Antoine Passemiers, Robin Petit
 

@@ -1,3 +1,8 @@
+""" This module contains contains all the initializers that
+are implemented. Any new initializer needs to inherit from
+:class:`bgd.initializers.Initializer` and to implement its
+abstract methods (:obj:`_initialize`). """
+
 # initializers.py
 # author : Antoine Passemiers, Robin Petit
 

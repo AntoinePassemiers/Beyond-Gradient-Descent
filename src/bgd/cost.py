@@ -1,3 +1,15 @@
+""" This module contains all the cost (loss) functions that
+are implemented. There exists a separation between regression
+and classification classes.
+
+Each cost function implemented needs to implement the
+computation of the cost (obviously) and *also* the gradient
+of the function w.r.t. :obj:`y_hat`.
+
+Any new cost function needs to inherit from either
+:class:`bgd.cost.RegressionCost` or :class:`ClassificationCost`
+depending on its use. """
+
 # cost.py
 # author : Antoine Passemiers, Robin Petit
 
