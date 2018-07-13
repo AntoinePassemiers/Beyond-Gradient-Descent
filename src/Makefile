@@ -7,5 +7,10 @@ build:
 clean:
 	rm -f bgd/*.c
 	rm -f bgd/*.so
+	rm -f classes.eps
+	rm -f packages.eps
 
-.PHONY: bgd build clean
+uml:
+	pyreverse -o eps bgd/*.py
+
+.PHONY: bgd build clean uml
