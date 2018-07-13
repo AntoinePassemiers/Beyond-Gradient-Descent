@@ -16,8 +16,9 @@ depending on its use. """
 __all__ = ['MSE', 'CrossEntropy']
 
 from abc import ABCMeta, abstractmethod
-import numpy as np
 import sys
+
+import numpy as np
 
 class Cost(metaclass=ABCMeta):
     """ Base class for error operators.
@@ -70,36 +71,56 @@ class Cost(metaclass=ABCMeta):
         pass
 
     def print_fitness(self, y, y_hat, end='\n', files=sys.stdout):
-        """ Prints a measure of the fitness/cost. """
+        r""" Prints a measure of the fitness/cost.
+
+        Args:
+            y (:class:`numpy.ndarray`):
+                Ground truth.
+            y_hat (:class:`numpy.ndarray`):
+                Prediction of the model.
+            end (:class:`str`):
+                String to write at the end. Defaults to '\n'.
+            files (:class:`tuple` of file-like objects or file-like object):
+                File(s) to write the fitness in. Defaults to stdout.
+        """
         if not isinstance(files, (list, tuple, set)):
             files = (files,)
-        self._print_fitness(y, y_hat, end, files)
+        for f in files:
+            self._print_fitness(y, y_hat, end, f)
 
     @abstractmethod
-    def _print_fitness(self, y, y_hat, end, files):
+    def _print_fitness(self, y, y_hat, end, f):
+        """ Wrapped method for printing the cost value/accuracy
+        of the model on provided data.
+
+        Args:
+            see :meth:`print_fitness`.
+        """
         pass
 
     @abstractmethod
     def name(self):
+        """ Returns the name of the cost function. """
         pass
 
 
-class ClassificationCost(Cost):
-    def _print_fitness(self, y, y_hat, end, files):
-        for f in files:
-            f.write('accuracy: {:.3f}%{}' \
-                    .format(ClassificationCost.accuracy(y, y_hat), end))
+class ClassificationCost(Cost):  #pylint: disable=W0223
+    """ Base class for all the cost functions used in classification. """
+    def _print_fitness(self, y, y_hat, end, f):
+        f.write('accuracy: {:.3f}%{}' \
+                .format(ClassificationCost.accuracy(y, y_hat), end))
 
     @staticmethod
     def accuracy(y, y_hat):
+        """ Returns the accuracy of y_hat w.r.t. y as a percentage. """
         return 100 * (y_hat.argmax(axis=1) == y).sum() / len(y_hat)
 
 
-class RegressionCost(Cost):
-    def _print_fitness(self, y, y_hat, end, files):
-        for f in files:
-            f.write('{}: {:.3f}{}' \
-                    .format(self.name(), self.eval(y, y_hat), end))
+class RegressionCost(Cost):  #pylint: disable=W0223
+    """ Base class for all the cost functions used in regression. """
+    def _print_fitness(self, y, y_hat, end, f):
+        f.write('{}: {:.3f}{}' \
+                .format(self.name(), self.eval(y, y_hat), end))
 
 
 class MSE(RegressionCost):

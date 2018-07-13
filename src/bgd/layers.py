@@ -18,8 +18,7 @@ import numpy as np
 from bgd.initializers import ZeroInitializer, GlorotUniformInitializer
 from bgd.errors import NonLearnableLayerError
 # pylint: disable=import-error,no-name-in-module
-from bgd.conv import conv_2d_forward, \
-                     conv_2d_backward, conv_2d_backward_weights
+from bgd.conv import conv_2d_forward, conv_2d_backward
 from bgd.max_pooling import max_pooling_2d_backward, max_pooling_2d_forward
 
 
@@ -309,7 +308,8 @@ class Convolutional2D(Layer):
 
     @staticmethod
     def _get_output_shape(kernel_shape, input_shape, strides, dilations):
-        dilated_kernel_shape = 1 + dilations * (np.asarray(kernel_shape[1:-1])-1)  # F_H^\delta and F_W^\delta
+        # F_H^\delta and F_W^\delta
+        dilated_kernel_shape = 1 + dilations * (np.asarray(kernel_shape[1:-1])-1)
         return [
             input_shape[0],
             1 + (input_shape[1] - dilated_kernel_shape[0]) // strides[0],
@@ -322,8 +322,8 @@ class Convolutional2D(Layer):
         self.filters = self.initializer.initialize(filters_shape, dtype=dtype)
         self.biases = self.bias_initializer.initialize(self.n_filters, dtype=dtype)
 
-        out_shape = Convolutional2D._get_output_shape(filters_shape, in_shape,
-                self.strides, self.dilations)
+        out_shape = Convolutional2D._get_output_shape(
+            filters_shape, in_shape, self.strides, self.dilations)
         self.out_buffer = np.zeros(out_shape, dtype=dtype)
         self.in_buffer = np.zeros(self.filters.shape, dtype=dtype)
         self.error_buffer = np.zeros(in_shape, dtype=dtype)
@@ -358,7 +358,8 @@ class Convolutional2D(Layer):
             self.dilations, self.strides
         )
         weights_buffer = np.empty(delta_shape, dtype=np.float32)
-        conv_2d_forward(weights_buffer,
+        conv_2d_forward(
+            weights_buffer,
             a.transpose((3, 1, 2, 0)).astype(np.float32),
             error.transpose((3, 1, 2, 0)).astype(np.float32),
             self.biases,

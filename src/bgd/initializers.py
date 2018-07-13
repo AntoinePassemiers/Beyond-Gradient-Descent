@@ -14,6 +14,7 @@ __all__ = [
 from abc import ABCMeta, abstractmethod
 import numpy as np
 
+# pylint: disable=too-few-public-methods
 
 class Initializer(metaclass=ABCMeta):
     """ Base class for all initializers.
@@ -130,8 +131,19 @@ class GaussianInitializer(Initializer):
         self.truncated = truncated
 
     def _initialize(self, shape):
-        # TODO: if truncated, discard samples that are more than 2*stdv and re-generate them
-        return np.random.normal(loc=self.mean, scale=self.stdv, size=shape)
+        ret = np.random.normal(loc=self.mean, scale=self.stdv, size=shape)
+        loop = self.truncated
+        while loop:
+            centered_ret = ret - self.mean
+            bound = 2*self.stdv
+            is_out_of_bounds = np.logical_or(centered_ret < bound, -bound < centered_ret)
+            if is_out_of_bounds.any():
+                indices = np.where(is_out_of_bounds)
+                size = len(indices[0]) if isinstance(indices, tuple) else len(indices)
+                ret[indices] = np.random.normal(loc=self.mean, scale=self.stdv, size=size)
+            else:
+                loop = False
+        return ret
 
 
 class GlorotGaussianInitializer(Initializer):
