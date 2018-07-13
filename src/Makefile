@@ -4,4 +4,8 @@ bgd:
 build:
 	python3 setup.py build_ext --inplace
 
-.PHONY: bgd build
+clean:
+	rm -f bgd/*.c
+	rm -f bgd/*.so
+
+.PHONY: bgd build clean

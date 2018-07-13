@@ -5,3 +5,4 @@ bgd.utils module
     :members:
     :private-members:
     :show-inheritance:
+    :ignore-module-all:

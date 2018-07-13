@@ -5,3 +5,4 @@ bgd.max\_pooling module
     :members:
     :private-members:
     :show-inheritance:
+    :ignore-module-all:

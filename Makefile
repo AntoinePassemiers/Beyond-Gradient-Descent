@@ -6,9 +6,9 @@ bgd:
 
 doc: 
 	make -C src/ build
-	SPHINX_APIDOC_OPTIONS='members,private-members,show-inheritance' sphinx-apidoc -f -M -e -o doc/source/ src/bgd/ src/bgd/setup.py
+	export SPHINX_APIDOC_OPTIONS=members,private-members,show-inheritance,ignore-module-all && \
+	sphinx-apidoc -Me -o doc/source/ src/bgd/ src/bgd/setup.py
 	make -C doc/ html
-	rm -f src/bgd/*.so
 
 pushdoc: doc
 	cd ${DOCS_DIR}/html && \
@@ -17,4 +17,8 @@ pushdoc: doc
 	git commit -m "Build the docs" && \
 	git push -f origin HEAD:gh-pages
 
-.PHONY: bgd doc pushdoc
+clean:
+	make -C doc/ clean
+	make -C src/ clean
+
+.PHONY: bgd doc pushdoc clean

@@ -5,3 +5,4 @@ bgd.operators module
     :members:
     :private-members:
     :show-inheritance:
+    :ignore-module-all:

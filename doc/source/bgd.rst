@@ -5,6 +5,7 @@ bgd package
     :members:
     :private-members:
     :show-inheritance:
+    :ignore-module-all:
 
 Submodules
 ----------
