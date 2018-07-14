@@ -20,9 +20,14 @@
 
 dist/
 build/
-doc/build/
 __pycache__/
 bgd.egg-info/
+
+### Doc
+
+doc/source/
+!doc/source/*.rst
+!doc/source/conf.py
 
 ### Misc
 

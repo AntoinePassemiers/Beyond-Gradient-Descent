@@ -11,6 +11,7 @@ Welcome to Beyond Gradient Descent's documentation!
    :caption: Contents:
 
    mathematical_framework
+   structure
    modules
 
 Indices and tables
