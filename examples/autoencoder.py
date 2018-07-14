@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 
 np.seterr(all='raise')
 
-def create_autoencoder():    
+def create_autoencoder():
     nn = NeuralStack()
     nn.add(GaussianNoise(0, .2, clip=(0, 1)))
     nn.add(FullyConnected(28*28, 50))
@@ -33,7 +33,7 @@ def create_autoencoder():
     nn.add(FullyConnected(50, 50))
     nn.add(Activation(function='tanh'))
     nn.add(FullyConnected(50, 28*28))
-    
+
     optimizer = AdamOptimizer(learning_rate=.005)
     nn.add(optimizer)
     nn.add(MSE())
@@ -51,7 +51,7 @@ def get_trained_autoencoder():
     except FileNotFoundError:
         nn = create_autoencoder()
         nn.add(SGDBatching(2048))
-        nn.train(X_train, X_train, alpha_reg=0.0001, epochs=200, print_every=2048)
+        nn.train(X_train, X_train, l2_alpha=0.0001, epochs=200, print_every=2048)
         nn.batch_op = None
         with open('autoencoder.pickle', 'wb') as f:
             pickle.dump(nn, f)
@@ -66,5 +66,5 @@ if __name__ == '__main__':
         axarr[i, 0].imshow(img)
         axarr[i, 1].imshow(img_prime)
     plt.show()
-    
-    
+
+

@@ -122,11 +122,13 @@ def test_cnn(dataset: str):
     nn.add(CrossEntropy())
     nn.add(SGDBatching(batch_size))
 
-    errors = nn.train(X_train, y_train,
-             epochs=epochs, print_every=1*batch_size, validation_fraction=0.01, alpha_reg=.005)
-    accuracy_test = nn.get_accuracy(X_test, y_test, batch_size=1024)
+    errors = nn.train(
+        X_train, y_train, epochs=epochs, print_every=1*batch_size,
+        validation_fraction=0.01, l2_alpha=.005)
+    accuracy_test = nn.get_accuracy(X_test, y_test)
     log('Accuracy on test: {:.3f}%'.format(accuracy_test))
 
+    print('Last errors:', errors[-5:])
     plt.plot(errors)
     plt.show()
 

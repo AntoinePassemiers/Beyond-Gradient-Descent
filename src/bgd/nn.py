@@ -182,7 +182,7 @@ class NeuralStack:
                         loss += 0.5 * alpha * np.sum(squared_params)
         return loss
 
-    def train(self, X, y, epochs=1000, alpha_reg=.0001,
+    def train(self, X, y, epochs=1000, l2_alpha=.0001,
               print_every=1, validation_fraction=0.1):
         """ Trains the model on samples X and labels y. Optimize the model
         parameters so that the loss is minimized on this dataset.
@@ -214,6 +214,8 @@ class NeuralStack:
         Raises:
             ValueError:
                 see :func:`split_train_val`.
+            RequiredComponentError:
+                see :meth:`check_components`.
 
         Example:
             >>> X, y = load_digits(return_X_y=True)
@@ -278,18 +280,16 @@ class NeuralStack:
             self.batch_op.start(X_train, y_train)
             next_batch = self.batch_op.next()
             while next_batch:
+                batch_x, batch_y = next_batch
                 batch_id += 1
                 nb_batches += 1
-                # Retrieve batch for next iteration
-                (batch_x, batch_y) = next_batch
-                next_batch = self.batch_op.next()
 
                 # Forward pass
                 predictions = self.eval(batch_x)
 
                 # Compute loss function
-                alpha = alpha_reg / self.batch_op.batch_size
-                loss = self.eval_loss(batch_y, predictions, alpha_reg)
+                l2_alpha = l2_alpha / self.batch_op.batch_size
+                loss = self.eval_loss(batch_y, predictions, l2_alpha)
                 losses.append(loss)
 
                 # Compute gradient of the loss function
@@ -297,13 +297,11 @@ class NeuralStack:
 
                 # Propagate error through each layer
                 for layer in reversed(self.layers):
-                    extra_info = {'l2_reg': alpha}
-                    signal, gradient = layer.backward(signal, extra_info)
+                    signal, gradient = layer.backward(signal)
                     if gradient is not None:
                         self.optimizer.add_gradient_fragments(layer, gradient)
-                F = lambda: self.eval_loss(batch_y, self.eval(batch_x), alpha)
-                self.optimizer.update(F)
-                self.optimizer.flush()
+                F = lambda: self.eval_loss(batch_y, self.eval(batch_x), alpha)  # pylint: disable=cell-var-from-loop
+                self.optimizer.update(F, l2_alpha)
 
                 if nb_batches % print_every == 0:
                     log('Loss at epoch {} (batch {}): {: <20}' \
@@ -311,6 +309,9 @@ class NeuralStack:
                         end=' - Validation ' if validation_fraction > 0 else '\n')
                     if validation_fraction > 0:
                         self.cost_op.print_fitness(y_val, self.eval(X_val))
+
+                # Retrieve batch for next iteration
+                next_batch = self.batch_op.next()
         return np.array(losses)
 
     def eval(self, X, start=0, stop=-1):
@@ -338,6 +339,20 @@ class NeuralStack:
         for i in range(start, stop):
             X = self.layers[i].forward(X)
         return X
+
+    def get_accuracy(self, X, y):
+        """ Returns the accuracy of the provided dataset on the model.
+
+        Raises:
+            :class:`AttributeError` if the model is not classifying.
+
+        See :meth:`bgd.ClassificationCost.accuracy`.
+        """
+        if isinstance(self.cost_op, ClassificationCost):
+            #if y.ndim == 1:
+            #    y = binarize_labels(y)
+            return ClassificationCost.accuracy(y, self.eval(X))
+        raise AttributeError('Model is not classifying. Accuracy unavailable.')
 
     def activate_dropout(self):
         """ Activates the Dropout layers (for training phase). """

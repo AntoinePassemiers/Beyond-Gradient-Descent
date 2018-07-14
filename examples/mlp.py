@@ -58,7 +58,7 @@ def train_mlp(use_lbfgs=True):
         nn.add(AdamOptimizer(learning_rate=0.007))
 
     t0 = time()
-    nn.train(X_train, y_train, alpha_reg=0.0001, epochs=6, print_every=100)
+    nn.train(X_train, y_train, l2_alpha=0.01, epochs=6, print_every=100)
     train_acc = accuracy_score(np.squeeze(y_train), nn.eval(X_train).argmax(axis=1))
     test_acc = accuracy_score(np.squeeze(y_test), nn.eval(X_test).argmax(axis=1))
     print("Training accuracy: %f" % train_acc)

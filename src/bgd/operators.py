@@ -8,10 +8,11 @@ __all__ = [
     'Log', 'Exp'
 ]
 
-from bgd.layers import Layer
-
 import numpy as np
 
+from bgd.layers import Layer
+
+# pylint: disable=abstract-method
 
 class Operator(Layer):
 

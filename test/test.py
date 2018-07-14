@@ -21,7 +21,7 @@ def test_mlp_on_xor_problem():
     nn.add(SGDBatching(4))
     X = [[0, 0], [0, 1], [1, 0], [1, 1]]
     y = [0, 1, 1, 0]
-    nn.train(X, y, alpha_reg=0, epochs=1000, print_every=800)
+    nn.train(X, y, l2_alpha=0, epochs=1000, print_every=800)
     predictions = np.squeeze(nn.eval(X))
     assert np.array_equal(predictions > 0.5, y)
 

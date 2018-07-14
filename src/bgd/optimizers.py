@@ -35,7 +35,7 @@ class Optimizer(metaclass=ABCMeta):
     def _update(self, grad, F):
         pass
 
-    def update(self, F):
+    def update(self, F, l2_alpha=0):
         """ Computes best move in the parameter space at
         current iteration using optimization techniques.
         All gradient fragments added to gradient_fragments
@@ -53,9 +53,10 @@ class Optimizer(metaclass=ABCMeta):
         gradient = np.concatenate(gradient)
 
         delta = self._update(gradient, F)
-        self.update_layers(delta)
+        self.update_layers(delta, l2_alpha)
+        self.flush()
 
-    def update_layers(self, delta):
+    def update_layers(self, delta, l2_alpha=0):
         cursor = 0
         for src_layer, layer_param_shapes, _ in self.gradient_fragments:
             layer_fragments = list()
@@ -65,6 +66,11 @@ class Optimizer(metaclass=ABCMeta):
                 layer_fragments.append(fragment.reshape(fragment_shape, order='C'))
                 cursor += n_elements
             src_layer.update_parameters(tuple(layer_fragments))
+            # L2 regularization
+            if l2_alpha > 0:
+                params = src_layer.get_parameters()
+                l2_grad = [l2_alpha*param for param in params]
+                src_layer.update_parameters(tuple(l2_grad))
 
     def add_gradient_fragments(self, src_layer, fragments):
         if not isinstance(fragments, (tuple, list)):

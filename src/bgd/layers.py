@@ -152,7 +152,7 @@ class Layer(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def _backward(self, error, extra_info=None):
+    def _backward(self, error):
         """ Wrapped method for applying a backward pass on input X. """
         pass
 
@@ -204,15 +204,8 @@ class FullyConnected(Layer):
         # Output: X * W + b
         return np.dot(X, self.weights) + self.biases
 
-    def _backward(self, error, extra_info=None):
+    def _backward(self, error):
         gradient_weights = np.dot(self.current_input.T, error)
-        try:
-            l2_alpha = extra_info['l2_reg']
-            if l2_alpha > 0:
-                # Derivative of L2 regularization term
-                gradient_weights += l2_alpha * self.weights
-        except KeyError:
-            pass
         gradient_bias = np.sum(error, axis=0, keepdims=True)
         if self.with_bias:
             gradients = (gradient_weights, gradient_bias)
@@ -261,7 +254,7 @@ class Activation(Layer):
             raise NotImplementedError()
         return out
 
-    def _backward(self, error, extra_info=None):
+    def _backward(self, error):
         X = self.current_output
         if self.function == Activation.SIGMOID:
             grad_X = X * (1. - X)
@@ -344,7 +337,7 @@ class Convolutional2D(Layer):
         self.n_instances = X.shape[0]
         return self.out_buffer[:X.shape[0], :, :, :]
 
-    def _backward(self, error, extra_info=None):
+    def _backward(self, error):
         # sum on 3 first dimensions to only keep the 4th (i.e. n_filters)
         db = np.sum(error, axis=(0, 1, 2))
         if self.current_input.ndim == 3:
@@ -369,9 +362,6 @@ class Convolutional2D(Layer):
             self.n_jobs
         )
         weights_buffer = weights_buffer.transpose((3, 1, 2, 0))
-        if extra_info['l2_reg'] > 0:
-            # Derivative of L2 regularization term
-            self.in_buffer += extra_info['l2_reg'] * self.filters
         if self.propagate:
             conv_2d_backward(self.error_buffer[:self.n_instances],
                              error.astype(np.float32), self.filters,
@@ -411,7 +401,7 @@ class MaxPooling2D(Layer):
         max_pooling_2d_forward(self.out_buffer, self.mask, X, self.pool_shape, self.strides)
         return self.out_buffer[:X.shape[0], :, :, :]
 
-    def _backward(self, error, extra_info=None):
+    def _backward(self, error):
         max_pooling_2d_backward(self.in_buffer, error, self.mask, self.pool_shape, self.strides)
         return self.in_buffer[:error.shape[0], :, :, :]
 
@@ -439,7 +429,7 @@ class Dropout(Layer):
             return self.mask * X
         return X
 
-    def _backward(self, error, extra_info=None):
+    def _backward(self, error):
         assert self.active
         return self.mask * error
 
@@ -463,7 +453,7 @@ class GaussianNoise(Layer):
             noised_X = np.clip(noised_X, self.clip[0], self.clip[1])
         return noised_X
 
-    def _backward(self, error, extra_info=None):
+    def _backward(self, error):
         return error
 
     def get_parameters(self):
@@ -481,7 +471,7 @@ class Flatten(Layer):
         self.in_shape = X.shape
         return X.reshape((X.shape[0], -1), order=self.order)
 
-    def _backward(self, error, extra_info=None):
+    def _backward(self, error):
         return error.reshape(self.in_shape, order=self.order)
 
     def get_parameters(self):
@@ -498,7 +488,7 @@ class Lambda(Layer):
     def _forward(self, X):
         return self.forward_op(X)
 
-    def _backward(self, error, extra_info=None):
+    def _backward(self, error):
         return self.backward_op(error)
 
     def get_parameters(self):
