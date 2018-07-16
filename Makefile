@@ -10,7 +10,7 @@ test: bgd
 doc: 
 	make -C src/ build
 	export SPHINX_APIDOC_OPTIONS=members,private-members,show-inheritance,ignore-module-all && \
-	sphinx-apidoc -Me -o doc/source/ src/bgd/ src/bgd/setup.py
+	sphinx-apidoc -Mef -o doc/source/ src/bgd/ src/bgd/setup.py
 	make -C doc/ html
 
 pushdoc: doc

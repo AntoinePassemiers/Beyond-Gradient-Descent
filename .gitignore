@@ -25,7 +25,7 @@ bgd.egg-info/
 
 ### Doc
 
-doc/source/
+doc/source/*
 !doc/source/*.rst
 !doc/source/conf.py
 

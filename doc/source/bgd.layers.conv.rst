@@ -1,7 +1,7 @@
-bgd.max\_pooling module
-=======================
+bgd.layers.conv module
+======================
 
-.. automodule:: bgd.max_pooling
+.. automodule:: bgd.layers.conv
     :members:
     :private-members:
     :show-inheritance:

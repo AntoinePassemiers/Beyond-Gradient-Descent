@@ -1,7 +1,7 @@
-bgd.operators module
-====================
+bgd.layers.layers module
+========================
 
-.. automodule:: bgd.operators
+.. automodule:: bgd.layers.layers
     :members:
     :private-members:
     :show-inheritance:

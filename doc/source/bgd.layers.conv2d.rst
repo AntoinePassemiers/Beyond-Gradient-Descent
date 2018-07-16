@@ -1,7 +1,7 @@
-bgd.conv module
-===============
+bgd.layers.conv2d module
+========================
 
-.. automodule:: bgd.conv
+.. automodule:: bgd.layers.conv2d
     :members:
     :private-members:
     :show-inheritance:
