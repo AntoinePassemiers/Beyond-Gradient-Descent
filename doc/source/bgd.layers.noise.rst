@@ -1,7 +1,7 @@
-bgd.layers.layers module
-========================
+bgd.layers.noise module
+=======================
 
-.. automodule:: bgd.layers.layers
+.. automodule:: bgd.layers.noise
     :members:
     :private-members:
     :show-inheritance:
