@@ -54,7 +54,7 @@ def test_mlp_digits():
     nn.add(SGDBatching(len(X_train)))
     nn.add(CrossEntropy())
     nn.add(AdamOptimizer(learning_rate=5e-3))
-    nn.train(X_train, y_train, print_every=1, epochs=50, l2_alpha=5e-2)
+    nn.train(X_train, y_train, print_every=1, epochs=100, l2_alpha=5e-2)
     assert ClassificationCost.accuracy(y_test, nn.eval(X_test)) >= .9
 
 def test_bounds_activations():
