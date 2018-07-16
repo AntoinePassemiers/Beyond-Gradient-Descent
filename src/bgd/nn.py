@@ -197,7 +197,7 @@ class NeuralStack:
                 Array of labels. `shape == (n_instances,)`
             epochs (int):
                 Number of times the dataset (X, y) is entirely fed to the model.
-            alpha_reg (float):
+            l2_alpha (float):
                 L2 regularization alpha parameter (0 if no L2).
             print_every (int):
                 Number of batches between two prints of model state and
@@ -300,7 +300,7 @@ class NeuralStack:
                     signal, gradient = layer.backward(signal)
                     if gradient is not None:
                         self.optimizer.add_gradient_fragments(layer, gradient)
-                F = lambda: self.eval_loss(batch_y, self.eval(batch_x), alpha)  # pylint: disable=cell-var-from-loop
+                F = lambda: self.eval_loss(batch_y, self.eval(batch_x), l2_alpha)  # pylint: disable=cell-var-from-loop
                 self.optimizer.update(F, l2_alpha)
 
                 if nb_batches % print_every == 0:
