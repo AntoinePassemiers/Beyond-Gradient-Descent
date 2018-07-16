@@ -4,6 +4,9 @@ DOCS_DIR     =../BGD-docs/
 bgd:
 	make -C src/ bgd
 
+test: bgd
+	pytest test/test.py
+
 doc: 
 	make -C src/ build
 	export SPHINX_APIDOC_OPTIONS=members,private-members,show-inheritance,ignore-module-all && \

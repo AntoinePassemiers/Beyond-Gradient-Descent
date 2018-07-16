@@ -6,10 +6,12 @@ from numpy.distutils.core import setup as np_setup
 
 DELETE_GENERATED_C_FILES = False
 SRC_FOLDER = "bgd"
-SUB_PACKAGES = []
+SUB_PACKAGES = [
+    "layers"
+]
 SRC_FILES = [
-    (["conv.c"], "conv"),
-    (["max_pooling.c"], "max_pooling"),
+    (["layers/conv.c"], "layers/conv"),
+    (["layers/max_pooling.c"], "layers/max_pooling"),
 ]
 
 COMPILE_ARGS = [

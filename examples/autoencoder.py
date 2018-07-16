@@ -51,7 +51,7 @@ def get_trained_autoencoder():
     except FileNotFoundError:
         nn = create_autoencoder()
         nn.add(SGDBatching(2048))
-        nn.train(X_train, X_train, l2_alpha=0.0001, epochs=200, print_every=2048)
+        nn.train(X_train, X_train, l2_alpha=.1, epochs=200, print_every=1)
         nn.batch_op = None
         with open('autoencoder.pickle', 'wb') as f:
             pickle.dump(nn, f)

@@ -275,6 +275,7 @@ class NeuralStack:
 
         losses = list()
         nb_batches = 0
+        l2_alpha /= self.batch_op.batch_size
         for epoch in range(epochs):
             batch_id = 0
             self.batch_op.start(X_train, y_train)
@@ -288,7 +289,6 @@ class NeuralStack:
                 predictions = self.eval(batch_x)
 
                 # Compute loss function
-                l2_alpha = l2_alpha / self.batch_op.batch_size
                 loss = self.eval_loss(batch_y, predictions, l2_alpha)
                 losses.append(loss)
 

@@ -16,8 +16,8 @@ except ImportError:
 
 source_folder = "bgd"
 source_files = [
-    "conv.pyx",
-    "max_pooling.pyx"
+    "layers/conv.pyx",
+    "layers/max_pooling.pyx"
 ]
 
 def configuration(parent_package=str(), top_path=None):
@@ -42,7 +42,7 @@ extensions = list()
 for source_file in source_files:
     source_filepath = os.path.join(source_folder, source_file)
     sources = [source_filepath]
-    extension_name = ".".join(["bgd", source_file])
+    extension_name = ".".join(["bgd", source_file.replace('/', '.')])
     extension_name = os.path.splitext(extension_name)[0]
     print(extension_name, sources)
     extensions.append(

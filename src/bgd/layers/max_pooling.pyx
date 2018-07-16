@@ -15,7 +15,7 @@ from libc.string cimport memset, memcpy
 import ctypes
 from cython.parallel import parallel, prange
 
-from bgd.conv cimport *
+from .conv cimport *
 
 
 def max_pooling_2d_forward(data_t[:, :, :, :] output, cnp.int8_t[:, :, :, :] mask, data_t[:, :, :, :] X, object pool_shape, object strides):
