@@ -303,7 +303,7 @@ class NeuralStack:
                 F = lambda: self.eval_loss(batch_y, self.eval(batch_x), l2_alpha)  # pylint: disable=cell-var-from-loop
                 self.optimizer.update(F, l2_alpha)
 
-                if nb_batches % print_every == 0:
+                if print_every > 0 and nb_batches % print_every == 0:
                     log('Loss at epoch {} (batch {}): {: <20}' \
                         .format(epoch, batch_id, loss),
                         end=' - Validation ' if validation_fraction > 0 else '\n')

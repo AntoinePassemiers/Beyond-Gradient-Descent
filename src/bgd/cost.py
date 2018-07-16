@@ -108,12 +108,12 @@ class ClassificationCost(Cost):  #pylint: disable=W0223
     """ Base class for all the cost functions used in classification. """
     def _print_fitness(self, y, y_hat, end, f):
         f.write('accuracy: {:.3f}%{}' \
-                .format(ClassificationCost.accuracy(y, y_hat), end))
+                .format(100*ClassificationCost.accuracy(y, y_hat), end))
 
     @staticmethod
     def accuracy(y, y_hat):
-        """ Returns the accuracy of y_hat w.r.t. y as a percentage. """
-        return 100 * (y_hat.argmax(axis=1) == y).sum() / len(y_hat)
+        """ Returns the accuracy of y_hat w.r.t. y. """
+        return (y_hat.argmax(axis=1) == y).sum() / len(y_hat)
 
 
 class RegressionCost(Cost):  #pylint: disable=W0223

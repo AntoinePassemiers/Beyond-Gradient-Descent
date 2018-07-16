@@ -9,7 +9,7 @@ from .conv2d import *
 from .dropout import *
 from .fc import *
 from .flatten import *
-from .layers import *
+from ._lambda import *
 from .layer import *
 from .max_pooling2d import *
 from .noise import *

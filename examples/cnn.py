@@ -7,7 +7,7 @@ from bgd.batch import SGDBatching
 from bgd.cost import CrossEntropy
 from bgd.layers import FullyConnected, Activation, Flatten, Convolutional2D, MaxPooling2D, Dropout
 from bgd.initializers import GaussianInitializer, UniformInitializer
-from bgd.operators import conv_2d_forward_sse, conv_2d_forward
+from bgd.layers.conv import conv_2d_forward_sse, conv_2d_forward
 from bgd.optimizers import MomentumOptimizer, AdamOptimizer
 from bgd.utils import log
 
@@ -123,7 +123,7 @@ def test_cnn(dataset: str):
     nn.add(SGDBatching(batch_size))
 
     errors = nn.train(
-        X_train, y_train, epochs=epochs, print_every=1*batch_size,
+        X_train, y_train, epochs=epochs, print_every=1,
         validation_fraction=0.01, l2_alpha=.005)
     accuracy_test = nn.get_accuracy(X_test, y_test)
     log('Accuracy on test: {:.3f}%'.format(accuracy_test))
