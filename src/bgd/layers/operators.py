@@ -10,7 +10,7 @@ __all__ = [
 
 import numpy as np
 
-from .layers import Layer
+from .layer import Layer
 
 # pylint: disable=abstract-method
 

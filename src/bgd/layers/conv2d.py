@@ -1,3 +1,6 @@
+# layers/conv2d.py
+# author : Antoine Passemiers, Robin Petit
+
 __all__ = [
     'Convolutional2D'
 ]

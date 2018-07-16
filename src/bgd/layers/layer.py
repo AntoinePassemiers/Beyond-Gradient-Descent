@@ -1,3 +1,6 @@
+# layers/layer.py
+# author : Antoine Passemiers, Robin Petit
+
 __all__ = [
     'Layer'
 ]

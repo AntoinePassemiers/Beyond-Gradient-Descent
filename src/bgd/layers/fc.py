@@ -1,3 +1,6 @@
+# layers/fc.py
+# author : Antoine Passemiers, Robin Petit
+
 __all__ = [
     'FullyConnected'
 ]

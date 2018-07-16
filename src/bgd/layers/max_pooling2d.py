@@ -1,3 +1,6 @@
+# layers/max_pooling2d.py
+# author : Antoine Passemiers, Robin Petit
+
 __all__ = [
     'MaxPooling2D'
 ]
