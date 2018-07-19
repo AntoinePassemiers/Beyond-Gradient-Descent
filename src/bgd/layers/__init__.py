@@ -1,7 +1,7 @@
 """ This module contains all the layers that are implemented.
-Any layer needs to inherit from :class:`bgd.layers.Layer` and
-to implement its abstract methods (:obj:`_forward`, :obj:`backward`
-and :obj:`get_parameters`, even by returning None if layer is
+Any layer needs to inherit from :class:`bgd.layers.layer.Layer` and
+to implement its abstract methods (:meth:`_forward`, :meth:`backward`
+and :meth:`get_parameters`, even by returning None if layer is
 non-parametric). """
 
 from .activation import *

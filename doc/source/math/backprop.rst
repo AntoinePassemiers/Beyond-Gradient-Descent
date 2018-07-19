@@ -26,6 +26,6 @@ That's where the name *back propagation* comes from: each layer needs to propaga
 it so that all the derivatives w.r.t. parameters can be computed properly.
 
 The backpropagation starts by taking the derivative of the loss w.r.t. the predictions:
-:math:`\\nabla_{\hat y}\mathcal L = \nabla_{X^{(K)}}\mathcal L = \varepsilon^{(K)}`.
+:math:`\nabla_{\hat y}\mathcal L = \nabla_{X^{(K)}}\mathcal L = \varepsilon^{(K)}`.
 This is why the cost functions defined in :mod:`bgd.cost` need to have a :obj:`_grad` method defined:
 differentiation is automatized.

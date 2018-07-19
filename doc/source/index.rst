@@ -10,9 +10,9 @@ Welcome to Beyond Gradient Descent's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-   mathematical_framework
+   math/mathematical_framework
    structure
-   modules
+   bgd/modules
 
 Indices and tables
 ==================

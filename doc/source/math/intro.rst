@@ -92,7 +92,7 @@ We introduce the notation:
 
 .. math::
 
-   \mathcal L : \mathbb R^{\ell \times n} \to \mathbb R^+ : X \mapsto L(\mathcal N(X), \mathbf y),
+   \mathcal L : \mathbb R^{\ell \times n} \to \mathbb R^+ : X \mapsto L(\mathbf y, \mathcal N(X))
 
 for the loss computed on samples of the dataset :math:`\mathcal D` where :math:`\mathbf y`
 is the label vector associated to samples :math:`X` (i.e. :math:`\mathbf y = [y^{(i_j)}]_{j=1}^\ell`

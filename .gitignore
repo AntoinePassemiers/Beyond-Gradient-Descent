@@ -25,9 +25,8 @@ bgd.egg-info/
 
 ### Doc
 
-doc/source/*
-!doc/source/*.rst
-!doc/source/conf.py
+doc/source/_static
+doc/source/uml_images
 
 ### Misc
 

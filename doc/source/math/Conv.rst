@@ -2,7 +2,7 @@ Convolutional Layer
 ^^^^^^^^^^^^^^^^^^^
 
 This section intends to detail the equations ruling a (2D) convolutional layer
-(see :class:`bgd.layers.Convolutional2D`).
+(see :class:`bgd.layers.conv2d.Convolutional2D`).
 
 If layer :math:`k` is a 2D-convolutional layer (Conv2D layer), the layer
 parameters are the biases (intercepts) :math:`b^{(k)}`, a 1D real vector,

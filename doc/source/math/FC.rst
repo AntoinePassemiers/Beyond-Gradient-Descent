@@ -2,7 +2,7 @@ Fully Connected
 ^^^^^^^^^^^^^^^
 
 This section intends to detail the equations ruling a fully connected (dense)
-layer (see :class:`bgd.layers.FullyConnected`).
+layer (see :class:`bgd.layers.fc.FullyConnected`).
 
 A fully connected layer is characterized by the number of input neurons (:math:`n_{\text{in}}`)
 and the number of output neurons (:math:`n_{\text{out}}`). Each of the output neurons is a linear
