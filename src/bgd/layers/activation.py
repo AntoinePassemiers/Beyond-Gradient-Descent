@@ -45,7 +45,7 @@ class Activation(Layer):
             grad_X = self.current_input
             if self.copy:
                 grad_X = np.empty_like(grad_X)
-            grad_X[:] = (grad_X >= 0)
+            grad_X[:] = (grad_X > 0)
         elif self.function == Activation.SOFTMAX:
             grad_X = X * (1. - X)
         else:

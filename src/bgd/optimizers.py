@@ -35,7 +35,7 @@ class Optimizer(metaclass=ABCMeta):
     def _update(self, grad, F):
         pass
 
-    def update(self, F, l2_alpha=0):
+    def update(self, F):
         """ Computes best move in the parameter space at
         current iteration using optimization techniques.
         All gradient fragments added to gradient_fragments
@@ -53,10 +53,10 @@ class Optimizer(metaclass=ABCMeta):
         gradient = np.concatenate(gradient)
 
         delta = self._update(gradient, F)
-        self.update_layers(delta, l2_alpha)
+        self.update_layers(delta)
         self.flush()
 
-    def update_layers(self, delta, l2_alpha=0):
+    def update_layers(self, delta):
         cursor = 0
         for src_layer, layer_param_shapes, _ in self.gradient_fragments:
             layer_fragments = list()
@@ -66,18 +66,19 @@ class Optimizer(metaclass=ABCMeta):
                 layer_fragments.append(fragment.reshape(fragment_shape, order='C'))
                 cursor += n_elements
             src_layer.update_parameters(tuple(layer_fragments))
-            # L2 regularization
-            if l2_alpha > 0:
-                params = src_layer.get_parameters()
-                l2_grad = [l2_alpha*param for param in params]
-                src_layer.update_parameters(tuple(l2_grad))
 
-    def add_gradient_fragments(self, src_layer, fragments):
-        if not isinstance(fragments, (tuple, list)):
+    def add_gradient_fragments(self, src_layer, fragments, l2_alpha=0.):
+        if isinstance(fragments, tuple):
+            fragments = list(fragments)
+        elif not isinstance(fragments, list):
             fragments = [fragments]
-        layer_param_shapes = list()
-        for fragment in fragments:
-            layer_param_shapes.append(fragment.shape)
+        layer_param_shapes = list(map(lambda f: f.shape, fragments))
+        # L2 regularization
+        if l2_alpha > 0:
+            layer_params = src_layer.get_parameters()
+            for i in range(len(fragments)):
+                assert fragments[i].shape == layer_params[i].shape
+                fragments[i] += l2_alpha * layer_params[i]
         self.gradient_fragments.append((src_layer, layer_param_shapes, fragments))
 
 

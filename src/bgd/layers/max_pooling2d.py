@@ -22,7 +22,6 @@ class MaxPooling2D(Layer):
         self.in_buffer = None
 
     def _forward(self, X):
-        X = X.astype(np.float32)
         if self.out_buffer is None or X.shape[0] > self.out_buffer.shape[0]:
             out_height = (X.shape[1] - self.pool_shape[0] + 1) // self.strides[0]
             out_width = (X.shape[2] - self.pool_shape[1] + 1) // self.strides[1]
@@ -34,7 +33,7 @@ class MaxPooling2D(Layer):
         return self.out_buffer[:X.shape[0], :, :, :]
 
     def _backward(self, error):
-        max_pooling_2d_backward(self.in_buffer, error.astype(np.float32), self.mask, self.pool_shape, self.strides)
+        max_pooling_2d_backward(self.in_buffer, error, self.mask, self.pool_shape, self.strides)
         return self.in_buffer[:error.shape[0], :, :, :]
 
     def get_parameters(self):

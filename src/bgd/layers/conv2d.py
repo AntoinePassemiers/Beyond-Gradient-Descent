@@ -67,7 +67,7 @@ class Convolutional2D(Layer):
             new_shape = tuple([X.shape[0]] + list(self.out_buffer.shape)[1:])
             self.out_buffer = np.empty(new_shape, dtype=np.float32)
 
-        conv_2d_forward(self.out_buffer, X.astype(np.float32), self.filters,
+        conv_2d_forward(self.out_buffer, X, self.filters,
                         self.biases, self.strides, self.dilations, self.with_bias,
                         self.n_jobs)
 
@@ -90,8 +90,8 @@ class Convolutional2D(Layer):
         weights_buffer = np.empty(delta_shape, dtype=np.float32)
         conv_2d_forward(
             weights_buffer,
-            a.transpose((3, 1, 2, 0)).astype(np.float32),
-            error.transpose((3, 1, 2, 0)).astype(np.float32),
+            a.transpose((3, 1, 2, 0)),
+            error.transpose((3, 1, 2, 0)),
             self.biases,
             self.dilations,
             self.strides,
@@ -101,12 +101,10 @@ class Convolutional2D(Layer):
         weights_buffer = weights_buffer.transpose((3, 1, 2, 0))
         if self.propagate:
             conv_2d_backward(self.error_buffer[:self.n_instances],
-                             error.astype(np.float32), self.filters,
-                             self.strides, self.n_jobs
-                            )
+                             error, self.filters, self.strides, self.n_jobs)
             signal = self.error_buffer[:self.n_instances, :, :, :]
             return (signal, (weights_buffer, db))
-        return (None, (self.in_buffer, db))
+        return (None, (weights_buffer, db))
 
     def get_parameters(self):
         return (self.filters, self.biases) if self.with_bias else (self.filters,)

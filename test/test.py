@@ -19,11 +19,11 @@ def test_mlp_on_xor_problem():
     nn.add(FullyConnected(8, 1))
     nn.add(Activation(function='sigmoid'))
     nn.add(MSE())
-    nn.add(MomentumOptimizer(learning_rate=0.5, momentum=0))
+    nn.add(MomentumOptimizer(learning_rate=.5, momentum=0))
     nn.add(SGDBatching(4))
     X = [[0, 0], [0, 1], [1, 0], [1, 1]]
     y = [0, 1, 1, 0]
-    nn.train(X, y, l2_alpha=0, epochs=1000, print_every=800)
+    nn.train(X, y, l2_alpha=0, epochs=1000, print_every=10)
     predictions = np.squeeze(nn.eval(X))
     assert np.array_equal(predictions > 0.5, y)
 
@@ -54,7 +54,7 @@ def test_mlp_digits():
     nn.add(SGDBatching(len(X_train)))
     nn.add(CrossEntropy())
     nn.add(AdamOptimizer(learning_rate=5e-3))
-    nn.train(X_train, y_train, print_every=1, epochs=100, l2_alpha=5e-2)
+    nn.train(X_train, y_train, print_every=1, epochs=100, l2_alpha=.05)
     assert ClassificationCost.accuracy(y_test, nn.eval(X_test)) >= .9
 
 def test_bounds_activations():
@@ -70,6 +70,30 @@ def test_bounds_activations():
         m, M = bounds[activation]
         assert not np.logical_or(output < m, output > M).any()
 
+def test_relu():
+    X = np.array(
+        [[-1, 5, 2, 4, -1],
+         [2, -2, 3, -1, 0],
+         [-1, -2, -3, -4, 0]
+        ]
+    )
+    layer = Activation('relu')
+    expected_output_forward = np.array(
+        [[0, 5, 2, 4, 0],
+         [2, 0, 3, 0, 0],
+         [0, 0, 0, 0, 0]
+        ]
+    )
+    assert (layer.forward(X) == expected_output_forward).all()
+    error = np.ones((3, 5))
+    expected_output_backward = np.array(
+        [[0, 1, 1, 1, 0],
+         [1, 0, 1, 0, 0],
+         [0, 0, 0, 0, 0]
+        ]
+    )
+    assert (layer.backward(error)[0] == expected_output_backward).all()
+
 def test_cnn_digits():
     images, labels = load_digits(return_X_y=True)
     images = images.reshape((-1, 8, 8))
@@ -79,11 +103,13 @@ def test_cnn_digits():
     nn.add(Activation('relu'))
     nn.add(MaxPooling2D((2, 2)))
     nn.add(Flatten())
-    nn.add(FullyConnected(256, 10))
+    nn.add(FullyConnected(256, 64))
+    nn.add(Activation('sigmoid'))
+    nn.add(FullyConnected(64, 10))
     nn.add(Activation('softmax'))
     nn.add(SGDBatching(len(X_train)))
     nn.add(CrossEntropy())
     nn.add(AdamOptimizer(learning_rate=5e-3))
-    nn.train(X_train, y_train, print_every=5, epochs=150, l2_alpha=5e-2)
+    nn.train(X_train, y_train, print_every=5, epochs=150, l2_alpha=.05, validation_fraction=0)
+    print('Trained')
     assert ClassificationCost.accuracy(y_test, nn.eval(X_test)) >= .9
-

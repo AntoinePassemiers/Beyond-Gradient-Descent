@@ -38,7 +38,7 @@ class FullyConnected(Layer):
     """
 
     def __init__(self, n_in, n_out, copy=False, with_bias=True,
-                 dtype=np.double, initializer=GlorotUniformInitializer(),
+                 dtype=np.float32, initializer=GlorotUniformInitializer(),
                  bias_initializer=ZeroInitializer()):
         Layer.__init__(self, copy=copy, save_output=False)
         self.with_bias = with_bias
@@ -59,8 +59,8 @@ class FullyConnected(Layer):
 
     def _backward(self, error):
         gradient_weights = np.dot(self.current_input.T, error)
-        gradient_bias = np.sum(error, axis=0, keepdims=True)
         if self.with_bias:
+            gradient_bias = np.sum(error, axis=0, keepdims=True)
             gradients = (gradient_weights, gradient_bias)
         else:
             gradients = gradient_weights

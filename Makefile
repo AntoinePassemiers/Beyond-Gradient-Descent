@@ -4,7 +4,7 @@ DOCS_DIR     =../BGD-docs/
 install:
 	make -C src/ bgd
 
-test: bgd
+test: install
 	pytest test/test.py
 
 doc: 
@@ -24,4 +24,4 @@ clean:
 	make -C doc/ clean
 	make -C src/ clean
 
-.PHONY: bgd doc pushdoc clean
+.PHONY: install doc pushdoc clean

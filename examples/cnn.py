@@ -124,7 +124,7 @@ def test_cnn(dataset: str):
 
     errors = nn.train(
         X_train, y_train, epochs=epochs, print_every=1,
-        validation_fraction=0.01, l2_alpha=.005)
+        validation_fraction=0.0, l2_alpha=.005)
     accuracy_test = nn.get_accuracy(X_test, y_test)
     log('Accuracy on test: {:.3f}%'.format(accuracy_test))
 

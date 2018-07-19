@@ -182,8 +182,9 @@ class NeuralStack:
                         loss += 0.5 * alpha * np.sum(squared_params)
         return loss
 
-    def train(self, X, y, epochs=1000, l2_alpha=.0001,
-              print_every=1, validation_fraction=0.1):
+    def train(self, X, y, epochs=1000, l2_alpha=.1,
+              print_every=1, validation_fraction=0.1,
+              dataset_normalization=False):
         """ Trains the model on samples X and labels y. Optimize the model
         parameters so that the loss is minimized on this dataset.
         The validation fraction *must* be in [0, 1] (0 to not evaluate the
@@ -252,8 +253,13 @@ class NeuralStack:
             >>> print('Loss over time:', losses)
             Errors: [ 2.50539121  2.28391007  2.40779468 ...,  0.11655055  0.12436938  0.09155006]
         """
+        dtype = np.float32  # Force the NN to work only with np.float32
         # Check arrays
         X, y = np.asarray(X), np.asarray(y)
+        if X.dtype is not dtype:
+            X = X.astype(dtype)
+        if dataset_normalization:
+            X = (X - X.mean()) / X.std()
 
         # Check components
         self.check_components()
@@ -275,7 +281,10 @@ class NeuralStack:
 
         losses = list()
         nb_batches = 0
-        l2_alpha /= self.batch_op.batch_size
+        if l2_alpha < 0:
+            l2_alpha = 0
+        else:
+            l2_alpha /= self.batch_op.batch_size  # TODO: batch_size is not an attribute of Batching
         for epoch in range(epochs):
             batch_id = 0
             self.batch_op.start(X_train, y_train)
@@ -293,15 +302,15 @@ class NeuralStack:
                 losses.append(loss)
 
                 # Compute gradient of the loss function
-                signal = self.cost_op.grad(batch_y, predictions)
+                signal = self.cost_op.grad(batch_y, predictions).astype(dtype)
 
                 # Propagate error through each layer
                 for layer in reversed(self.layers):
                     signal, gradient = layer.backward(signal)
                     if gradient is not None:
-                        self.optimizer.add_gradient_fragments(layer, gradient)
+                        self.optimizer.add_gradient_fragments(layer, gradient, l2_alpha)
                 F = lambda: self.eval_loss(batch_y, self.eval(batch_x), l2_alpha)  # pylint: disable=cell-var-from-loop
-                self.optimizer.update(F, l2_alpha)
+                self.optimizer.update(F)
 
                 if print_every > 0 and nb_batches % print_every == 0:
                     log('Loss at epoch {} (batch {}): {: <20}' \
@@ -333,7 +342,7 @@ class NeuralStack:
                     Output of the propagation of X through each layer
                     of the model.
         """
-        X = np.asarray(X)
+        X = np.asarray(X, dtype=np.float32)
         if stop == -1 or stop > len(self.layers):
             stop = len(self.layers)
         for i in range(start, stop):
