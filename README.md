@@ -58,12 +58,13 @@ print("Training accuracy: %f" % train_acc)
 print("Test accuracy: %f" % test_acc)
 ```
 
-More examples can be found in *examples/* folder.
+More examples can be found in `examples/` folder.
 
 Components
 ----------
 
-Here is a list of components that are currently available.
+Here is a list of components that are currently available. Full documentation is available
+[here](https://antoinepassemiers.github.io/Beyond-Gradient-Descent/).
 
 ### Layers
 
@@ -101,16 +102,16 @@ Installation
 
 ### Dependencies
 
-To get BGD to work on your computer, you will need:
-
-- Python 3.x
-- NumPy (>= 1.6.1)
-- Cython
+All the dependencies are listed in `requirements.txt`. To install them all, run:
+```
+$ pip3 install -r requirements.txt
+```
 
 ### User installation
 
-Install the package :
-```
-$ cd src
-$ python setup.py install
-```
+To install the package:
+
+* if you terminal supports `make`, then run `make install` in the root;
+* otherwise (or if you prefer), move to `src/` with `cd src` and then install
+  the package with `python3 setup.py install`.
+

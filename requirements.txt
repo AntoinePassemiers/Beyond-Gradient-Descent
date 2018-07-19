@@ -1,0 +1,8 @@
+numpy>=1.8
+scikit-learn>=0.19
+Cython
+
+sphinx>=1.7
+-e git+https://github.com/RobinPetit/sphinx-pyreverse@compatibility_sphinx_1.7#egg=sphinx-pyreverse
+sphinxcontrib-napoleon
+sphinx_rtd_theme
