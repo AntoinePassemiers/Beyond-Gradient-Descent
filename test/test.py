@@ -69,3 +69,21 @@ def test_bounds_activations():
         output = activation_layer.forward(X)
         m, M = bounds[activation]
         assert not np.logical_or(output < m, output > M).any()
+
+def test_cnn_digits():
+    images, labels = load_digits(return_X_y=True)
+    images = images.reshape((-1, 8, 8))
+    X_train, X_test, y_train, y_test = train_test_split(images, labels, train_size=.9, test_size=.1)
+    nn = NeuralStack()
+    nn.add(Convolutional2D((4, 4, 1), 16))
+    nn.add(Activation('relu'))
+    nn.add(MaxPooling2D((2, 2)))
+    nn.add(Flatten())
+    nn.add(FullyConnected(256, 10))
+    nn.add(Activation('softmax'))
+    nn.add(SGDBatching(len(X_train)))
+    nn.add(CrossEntropy())
+    nn.add(AdamOptimizer(learning_rate=5e-3))
+    nn.train(X_train, y_train, print_every=5, epochs=150, l2_alpha=5e-2)
+    assert ClassificationCost.accuracy(y_test, nn.eval(X_test)) >= .9
+
