@@ -5,13 +5,13 @@ from numpy.distutils.misc_util import Configuration
 from numpy.distutils.core import setup as np_setup
 
 DELETE_GENERATED_C_FILES = False
-SRC_FOLDER = "bgd"
+SRC_FOLDER = 'bgd'
 SUB_PACKAGES = [
-    "layers"
+    'layers'
 ]
 SRC_FILES = [
-    (["layers/conv.c"], "layers/conv"),
-    (["layers/max_pooling.c"], "layers/max_pooling"),
+    (['layers/conv.c'], 'layers.conv'),
+    (['layers/max_pooling.c'], 'layers.max_pooling'),
 ]
 
 COMPILE_ARGS = [
@@ -32,7 +32,7 @@ for sub_package in SUB_PACKAGES:
     CONFIG.add_subpackage(sub_package)
 for sources, extension_name in SRC_FILES:
     sources = [os.path.join(SRC_FOLDER, source) for source in sources]
-    extension_name = os.path.splitext(extension_name)[0]
+    #extension_name = os.path.splitext(extension_name)[0]
     print(extension_name, sources)
     CONFIG.add_extension(
         extension_name,
