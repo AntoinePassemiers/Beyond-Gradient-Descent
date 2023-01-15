@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fully Connected &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Convolutional Layer" href="Conv.html" />
+    <link rel="prev" title="Layers" href="layers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mathematical_framework.html">Mathematical Framework</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">Introduction and Notations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backprop.html">Backpropagation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="layers.html">Layers</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Fully Connected</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#backpropagation">Backpropagation</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Conv.html">Convolutional Layer</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../structure.html">Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../bgd/modules.html">bgd</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="mathematical_framework.html">Mathematical Framework</a></li>
+          <li class="breadcrumb-item"><a href="layers.html">Layers</a></li>
+      <li class="breadcrumb-item active">Fully Connected</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/math/FC.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fully-connected">
+<h1>Fully Connected<a class="headerlink" href="#fully-connected" title="Permalink to this headline"></a></h1>
+<p>This section intends to detail the equations ruling a fully connected (dense)
+layer (see <a class="reference internal" href="../bgd/bgd.layers.fc.html#bgd.layers.fc.FullyConnected" title="bgd.layers.fc.FullyConnected"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.layers.fc.FullyConnected</span></code></a>).</p>
+<p>A fully connected layer is characterized by the number of input neurons (<span class="math notranslate nohighlight">\(n_{\text{in}}\)</span>)
+and the number of output neurons (<span class="math notranslate nohighlight">\(n_{\text{out}}\)</span>). Each of the output neurons is a linear
+combination of all the input neurons with possibly a bias (intercept).</p>
+<p>If layer <span class="math notranslate nohighlight">\(k\)</span> is a fully connected one, the layer parameters are:</p>
+<div class="math notranslate nohighlight">
+\[\theta^{(k)} = (A^{(k)}, b^{(k)}) \in \mathbb R^{n^{(k-1)} \times n^{(k)}} \times \mathbb R^{n^{(k)}},\]</div>
+<p>and the layer function is given by:</p>
+<div class="math notranslate nohighlight">
+\[\Lambda_{(A^{(k)}, b^{(k)})}^{(k)} : \mathbb R^{n^{(k-1)}} \to \mathbb R^{n^{(k)}} : x \mapsto xA^{(k)} + b^{(k)}.\]</div>
+<section id="backpropagation">
+<h2>Backpropagation<a class="headerlink" href="#backpropagation" title="Permalink to this headline"></a></h2>
+<p>The backpropagation algorithm requires <span class="math notranslate nohighlight">\(\partial_{A^{(k)}_{i,j}}\mathcal L\)</span>,
+<span class="math notranslate nohighlight">\(\partial_{b^{(k)}_i}\mathcal L\)</span> and <span class="math notranslate nohighlight">\(\partial_{X^{(k-1)}_{i,j}}\mathcal L\)</span></p>
+<p>For the weights update:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\partial_{A^{(k)}_{i,j}}\mathcal L(X) &amp;= \sum_{\alpha,\beta = (1,1)}^{(\ell, n^{(k)})}\varepsilon^{(k)}_{\alpha,\beta}\partial_{A^{(k)}_{i,j}}X^{(k)}_{\alpha,\beta}
+= \sum_{\alpha,\beta = (1,1)}^{(\ell, n^{(k)})}\varepsilon^{(k)}_{\alpha,\beta}\sum_{\gamma=1}^{n^{(k-1)}}X_{\alpha,\gamma}\partial_{A^{(k)}_{i,j}}A^{(k)}_{\gamma,\beta} \\
+                                      &amp;= \sum_{\alpha,\beta = (1,1)}^{(\ell, n^{(k)})}\varepsilon^{(k)}_{\alpha,\beta}X_{\alpha,i}\delta_\beta^j
+= \sum_{\alpha=1}^\ell\varepsilon^{(k)}_{\alpha,j}X_{\alpha,i} = \Big(X'\varepsilon^{(k)}\Big)_{i,j}.\end{split}\]</div>
+<p>Therefore <span class="math notranslate nohighlight">\(\nabla_{A^{(k)}}\mathcal L = X'\varepsilon\)</span>.</p>
+<div class="math notranslate nohighlight">
+\[\partial_{b^{(k)}_i}\mathcal L = \sum_{\alpha,\beta = (1,1)}^{(\ell, n^{(k)})}\varepsilon^{(k)}_{\alpha,\beta}\partial_{b^{(k)}_i}b^{(k)}_\beta
+= \sum_{\alpha=1}^\ell\varepsilon^{(k)}_{\alpha,i}.\]</div>
+<p>For the signal propagation:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\partial_{X^{(k-1)}_{i,j}}\mathcal L &amp;= \sum_{\alpha,\beta = (1,1)}^{(\ell, n^{(k)})}\varepsilon^{(k)}_{\alpha,\beta}\partial_{X^{(k-1)}_{i,j}}X^{(k)}_{\alpha,\beta}
+= \sum_{\alpha,\beta = (1,1)}^{(\ell,n^{(k)})}\varepsilon^{(k)}_{\alpha,\beta}\sum_{\gamma=1}^{n^{(k-1)}}\delta_i^\alpha\delta_j^\gamma \\
+&amp;= \sum_{\beta=1}^{n^{(k)}}\varepsilon^{(k)}_{i,\beta}A^{(k)}_{\beta,j} = \Big(\varepsilon^{(k)}{A^{(k)}}'\Big)_{i,j}.\end{split}\]</div>
+<p>Therefore <span class="math notranslate nohighlight">\(\nabla_{X^{(k-1)}}\mathcal L = \varepsilon^{(k)}{A^{(k)}}'\)</span>.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="layers.html" class="btn btn-neutral float-left" title="Layers" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Conv.html" class="btn btn-neutral float-right" title="Convolutional Layer" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

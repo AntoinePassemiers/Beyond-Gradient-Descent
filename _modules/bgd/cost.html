@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bgd.cost &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../math/mathematical_framework.html">Mathematical Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../structure.html">Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bgd/modules.html">bgd</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">bgd.cost</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for bgd.cost</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; This module contains all the cost (loss) functions that</span>
+<span class="sd">are implemented. There exists a separation between regression</span>
+<span class="sd">and classification classes.</span>
+
+<span class="sd">Each cost function implemented needs to implement the</span>
+<span class="sd">computation of the cost (obviously) and *also* the gradient</span>
+<span class="sd">of the function w.r.t. :obj:`y_hat`.</span>
+
+<span class="sd">Any new cost function needs to inherit from either</span>
+<span class="sd">:class:`bgd.cost.RegressionCost` or :class:`ClassificationCost`</span>
+<span class="sd">depending on its use. &quot;&quot;&quot;</span>
+
+<span class="c1"># cost.py</span>
+<span class="c1"># author : Antoine Passemiers, Robin Petit</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;MSE&#39;</span><span class="p">,</span> <span class="s1">&#39;CrossEntropy&#39;</span><span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="Cost"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.Cost">[docs]</a><span class="k">class</span> <span class="nc">Cost</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Base class for error operators.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y (:obj:`np.ndarray`):</span>
+<span class="sd">            Array of shape (n_samples, output_size) representing</span>
+<span class="sd">            the expected outputs. Must have same length as X.</span>
+<span class="sd">        y_hat (:obj:`np.ndarray`):</span>
+<span class="sd">            Array of shape (n_samples, output_size) representing</span>
+<span class="sd">            the predictions. Must have same length as Y.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Cost.eval"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.Cost.eval">[docs]</a>    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Evaluates the error operator and returns an array of</span>
+<span class="sd">        shape (n_samples,) with the per-sample cost.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :obj:`np.ndarray`:</span>
+<span class="sd">                loss:</span>
+<span class="sd">                    The error function value for each sample</span>
+<span class="sd">                    of the batch. `shape == (len(y),)`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_hat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_eval</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Cost.grad"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.Cost.grad">[docs]</a>    <span class="k">def</span> <span class="nf">grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Evaluates the gradient of the error. The error must be</span>
+<span class="sd">        not depend on to the model parameters.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :obj:`np.ndarray`:</span>
+<span class="sd">                grad:</span>
+<span class="sd">                    The gradient of the error for each sample</span>
+<span class="sd">                    of the batch. `shape == (len(y),)`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_hat</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_grad</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Cost._eval"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.Cost._eval">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapped method for evaluating the error operator.</span>
+<span class="sd">        Subclasses must override this method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Cost._grad"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.Cost._grad">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapped method for evaluating the error gradient.</span>
+<span class="sd">        Subclasses must override this method. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Cost.print_fitness"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.Cost.print_fitness">[docs]</a>    <span class="k">def</span> <span class="nf">print_fitness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">files</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">):</span>
+        <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Prints a measure of the fitness/cost.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (:class:`numpy.ndarray`):</span>
+<span class="sd">                Ground truth.</span>
+<span class="sd">            y_hat (:class:`numpy.ndarray`):</span>
+<span class="sd">                Prediction of the model.</span>
+<span class="sd">            end (:class:`str`):</span>
+<span class="sd">                String to write at the end. Defaults to &#39;\n&#39;.</span>
+<span class="sd">            files (:class:`tuple` of file-like objects or file-like object):</span>
+<span class="sd">                File(s) to write the fitness in. Defaults to stdout.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">)):</span>
+            <span class="n">files</span> <span class="o">=</span> <span class="p">(</span><span class="n">files</span><span class="p">,)</span>
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_print_fitness</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Cost._print_fitness"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.Cost._print_fitness">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_print_fitness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapped method for printing the cost value/accuracy</span>
+<span class="sd">        of the model on provided data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            see :meth:`print_fitness`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Cost.name"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.Cost.name">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns the name of the cost function. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="ClassificationCost"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.ClassificationCost">[docs]</a><span class="k">class</span> <span class="nc">ClassificationCost</span><span class="p">(</span><span class="n">Cost</span><span class="p">):</span>  <span class="c1">#pylint: disable=W0223</span>
+    <span class="sd">&quot;&quot;&quot; Base class for all the cost functions used in classification. &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="ClassificationCost._print_fitness"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.ClassificationCost._print_fitness">[docs]</a>    <span class="k">def</span> <span class="nf">_print_fitness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;accuracy: </span><span class="si">{:.3f}</span><span class="s1">%</span><span class="si">{}</span><span class="s1">&#39;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="mi">100</span><span class="o">*</span><span class="n">ClassificationCost</span><span class="o">.</span><span class="n">accuracy</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">),</span> <span class="n">end</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="ClassificationCost.accuracy"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.ClassificationCost.accuracy">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">accuracy</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns the accuracy of y_hat w.r.t. y. &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">y_hat</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">==</span> <span class="n">y</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_hat</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="RegressionCost"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.RegressionCost">[docs]</a><span class="k">class</span> <span class="nc">RegressionCost</span><span class="p">(</span><span class="n">Cost</span><span class="p">):</span>  <span class="c1">#pylint: disable=W0223</span>
+    <span class="sd">&quot;&quot;&quot; Base class for all the cost functions used in regression. &quot;&quot;&quot;</span>
+<div class="viewcode-block" id="RegressionCost._print_fitness"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.RegressionCost._print_fitness">[docs]</a>    <span class="k">def</span> <span class="nf">_print_fitness</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">f</span><span class="p">):</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">: </span><span class="si">{:.3f}{}</span><span class="s1">&#39;</span> \
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">),</span> <span class="n">end</span><span class="p">))</span></div></div>
+
+
+<div class="viewcode-block" id="MSE"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.MSE">[docs]</a><span class="k">class</span> <span class="nc">MSE</span><span class="p">(</span><span class="n">RegressionCost</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Differentiable Mean Squared Error operator.</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        C(y, \hat y) = \frac 1{2n}\sum_{i=1}^n\big(y_i - \hat y_i\big)^2</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MSE._eval"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.MSE._eval">[docs]</a>    <span class="k">def</span> <span class="nf">_eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Return mean squared error.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (:obj:`np.ndarray`):</span>
+<span class="sd">                Ground truth values.</span>
+<span class="sd">            y_hat (:obj:`np.ndarray`):</span>
+<span class="sd">                Predicted values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :obj:`np.ndarray`:</span>
+<span class="sd">                loss:</span>
+<span class="sd">                    The error function value for each sample</span>
+<span class="sd">                    of the batch. `shape == (len(y),)`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mf">.5</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y_hat</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MSE._grad"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.MSE._grad">[docs]</a>    <span class="k">def</span> <span class="nf">_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns the derivative of mean squared error.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (:obj:`np.ndarray`):</span>
+<span class="sd">                Ground truth values.</span>
+<span class="sd">            y_hat (:obj:`np.ndarray`):</span>
+<span class="sd">                Predicted values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :obj:`np.ndarray`:</span>
+<span class="sd">                grad:</span>
+<span class="sd">                    The gradient of the error for each sample</span>
+<span class="sd">                    of the batch. `shape == (len(y),)`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">y_hat</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">y_hat</span> <span class="o">-</span> <span class="n">y</span></div>
+
+<div class="viewcode-block" id="MSE.name"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.MSE.name">[docs]</a>    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;MSE&#39;</span></div></div>
+
+
+<div class="viewcode-block" id="CrossEntropy"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.CrossEntropy">[docs]</a><span class="k">class</span> <span class="nc">CrossEntropy</span><span class="p">(</span><span class="n">ClassificationCost</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot; Differentiable cross-entropy operator.</span>
+
+<span class="sd">    .. math::</span>
+<span class="sd">        C(y, \hat y) = -\frac 1n\sum_{i=1}^n\big[y_i\log\hat y_i + (1-y_i)\log(1-\hat y_i)\big]</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        epsilon: parameter for numerical stability</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epsilon</span><span class="o">=</span><span class="mf">1e-15</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span> <span class="o">=</span> <span class="n">epsilon</span>
+
+<div class="viewcode-block" id="CrossEntropy._eval"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.CrossEntropy._eval">[docs]</a>    <span class="k">def</span> <span class="nf">_eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Return cross-entropy metric.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (:obj:`np.ndarray`):</span>
+<span class="sd">                Ground truth labels.</span>
+<span class="sd">            y_hat (:obj:`np.ndarray`):</span>
+<span class="sd">                Predicted values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :obj:`np.ndarray`:</span>
+<span class="sd">                loss:</span>
+<span class="sd">                    The error function value for each sample</span>
+<span class="sd">                    of the batch. `shape == (len(y),)`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">y_hat</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">y_hat</span><span class="p">)),</span> <span class="n">indices</span><span class="p">]</span>
+        <span class="n">log_predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">epsilon</span><span class="p">))</span>
+        <span class="k">return</span> <span class="o">-</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">log_predictions</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="CrossEntropy._grad"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.CrossEntropy._grad">[docs]</a>    <span class="k">def</span> <span class="nf">_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Return derivative of cross-entropy function.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (:obj:`np.ndarray`):</span>
+<span class="sd">                Ground truth labels.</span>
+<span class="sd">            y_hat (:obj:`np.ndarray`):</span>
+<span class="sd">                Predicted values.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :obj:`np.ndarray`:</span>
+<span class="sd">                grad:</span>
+<span class="sd">                    The gradient of the error for each sample</span>
+<span class="sd">                    of the batch. `shape == (len(y),)`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">y_hat</span> <span class="o">-</span> <span class="n">y</span></div>
+
+<div class="viewcode-block" id="CrossEntropy.name"><a class="viewcode-back" href="../../bgd/bgd.cost.html#bgd.cost.CrossEntropy.name">[docs]</a>    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;cross-entropy&#39;</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

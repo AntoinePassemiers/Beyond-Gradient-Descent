@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Convolutional Layer &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Structure" href="../structure.html" />
+    <link rel="prev" title="Fully Connected" href="FC.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mathematical_framework.html">Mathematical Framework</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">Introduction and Notations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="backprop.html">Backpropagation</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="layers.html">Layers</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="FC.html">Fully Connected</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">Convolutional Layer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#strides">Strides</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#dilations">Dilations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#convolution-function">Convolution function</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backpropagation">Backpropagation</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../structure.html">Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../bgd/modules.html">bgd</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="mathematical_framework.html">Mathematical Framework</a></li>
+          <li class="breadcrumb-item"><a href="layers.html">Layers</a></li>
+      <li class="breadcrumb-item active">Convolutional Layer</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/math/Conv.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="convolutional-layer">
+<h1>Convolutional Layer<a class="headerlink" href="#convolutional-layer" title="Permalink to this headline"></a></h1>
+<p>This section intends to detail the equations ruling a (2D) convolutional layer
+(see <a class="reference internal" href="../bgd/bgd.layers.conv2d.html#bgd.layers.conv2d.Convolutional2D" title="bgd.layers.conv2d.Convolutional2D"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.layers.conv2d.Convolutional2D</span></code></a>).</p>
+<p>If layer <span class="math notranslate nohighlight">\(k\)</span> is a 2D-convolutional layer (Conv2D layer), the layer
+parameters are the biases (intercepts) <span class="math notranslate nohighlight">\(b^{(k)}\)</span>, a 1D real vector,
+and the filters <span class="math notranslate nohighlight">\(\omega^{(k)}\)</span>, a 4D tensor of dimension
+<span class="math notranslate nohighlight">\((n_F^{(k)}, F_H^{(k)}, F_W^{(k)}, n_C^{(k)})\)</span>, respectively the number
+of filters, the width of the filters, the height of the filters, and the number
+of channels in the input.</p>
+<section id="strides">
+<h2>Strides<a class="headerlink" href="#strides" title="Permalink to this headline"></a></h2>
+<p>The strides, denoted by <span class="math notranslate nohighlight">\(\sigma = [\sigma_1 \; \sigma_2]' \in \mathbb {\mathbb N^*}^2\)</span>,
+represent the step taken between two pixels of the output image.</p>
+<p>They induce the following dimension for the output image:</p>
+<div class="math notranslate nohighlight">
+\[(\ell, H, W, n_C^{(k)}) * (n_F^{(k)}, F_H^{(k)}, F_W^{(k)}, n_C^{(k)}) \mapsto
+ (\ell, \lfloor(H - F_H^{(k)}) / \sigma_1\rfloor + 1, \lfloor(W - F_W^{(k)}) / \sigma_2\rfloor + 1, n_F^{(k)}).\]</div>
+</section>
+<section id="dilations">
+<h2>Dilations<a class="headerlink" href="#dilations" title="Permalink to this headline"></a></h2>
+<p>The dilations, denoted by <span class="math notranslate nohighlight">\(\delta = [\delta_1 \; \delta_2]' \in \mathbb {\mathbb N^*}^2\)</span>,
+represent a dilation on the filters, i.e. the number of rows/columns of pixels in the input
+image that are skipped between two rows/columns of the filters.</p>
+<p>The effect of the dilations can be viewed as a <em>literal</em> dilation of the filters where a
+2D filter <span class="math notranslate nohighlight">\(\omega\)</span> of shape <span class="math notranslate nohighlight">\((m, n)\)</span> is dilated into another 2D filter
+<span class="math notranslate nohighlight">\(\hat \omega\)</span> of shape <span class="math notranslate nohighlight">\((\hat m, \hat n) = (\delta_1 \cdot (m-1) + 1, \delta_2 \cdot (n-1) + 1)\)</span>.</p>
+<p>Therefore, by using the notation <span class="math notranslate nohighlight">\(\hat .\)</span> in order to denote the shape of a
+dilated filter, we have that the dimension of the output image is:</p>
+<div class="math notranslate nohighlight">
+\[(\ell, \lfloor(H - \hat F_H^{(k)}) / \sigma_1\rfloor + 1, \lfloor(W - \hat F_W^{(k)}) / \sigma_2\rfloor + 1, n_F^{(k)}),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\hat F_H^{(k)} = 1 + \delta_1(F_H^{(k)} - 1)\)</span> and <span class="math notranslate nohighlight">\(\hat F_W^{(k)} = 1 + \delta_2(F_W^{(k)} - 1)\)</span>.</p>
+</section>
+<section id="convolution-function">
+<h2>Convolution function<a class="headerlink" href="#convolution-function" title="Permalink to this headline"></a></h2>
+<p>The layer function is then given by:</p>
+<div class="math notranslate nohighlight">
+\[\Lambda^{(k)}_{\theta^{(k)}} :
+ \mathbb R^{\ell \times H \times W \times n_C^{(k)}}
+   \to \mathbb R^{\ell \times (\lfloor(H - \hat F_H^{(k)}) / \sigma_1\rfloor+1) \times (\lfloor(W - \hat F_W^{(k)}) / \sigma_2\rfloor+1) \times n_F^{(k)}} :
+ X \mapsto \Lambda^{(k)}_{\theta^{(k)}}(X; \sigma, \delta),\]</div>
+<p>where, for <span class="math notranslate nohighlight">\(\beta\)</span> a multi-index of the output image:</p>
+<div class="math notranslate nohighlight">
+\[\Lambda^{(k)}_{\theta^{(k)}}(X^{(k-1)}; \sigma, \delta)_\beta = \sum_{\gamma_1=1}^{F_H^{(k)}}\sum_{\gamma_2=1}^{F_W^{(k)}}\sum_{\gamma_3=1}^{n_C^{(k)}}\omega^{(k)}_{\beta_3,\gamma_1,\gamma_2,\gamma_3}X^{(k-1)}_{\beta_0,\beta_1+\sigma_1\gamma_1,\beta_2+\sigma_2\gamma_2,\gamma_3} + b^{(k)}_{\beta_3}.\]</div>
+</section>
+<section id="backpropagation">
+<h2>Backpropagation<a class="headerlink" href="#backpropagation" title="Permalink to this headline"></a></h2>
+<p>The backpropagation algorithm requires <span class="math notranslate nohighlight">\(\partial_{\omega^{(k)}_\alpha}\mathcal L\)</span>,
+<span class="math notranslate nohighlight">\(\partial_{b^{(k)}_i}\mathcal L\)</span> and <span class="math notranslate nohighlight">\(\partial_{X^{(k-1)}_\alpha}\mathcal L\)</span>.</p>
+<p>For the weights update:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\partial_{\omega^{(k)_\alpha}}X^{(k)}_\beta &amp;= \sum_{\gamma_1}\sum_{\gamma_2}\sum_{\gamma_3}\delta^{\beta_3}_{\alpha_0}\delta^{\gamma_1}_{\alpha_1}\delta^{\gamma_2}_{\alpha_2}\delta^{\gamma_3}_{\alpha_3}X^{(k-1)}_{\beta_0,\sigma_1\beta_1 + \delta_1\gamma_1, \sigma_2\beta_2 + \delta_2\gamma_2,\gamma_3} \\
+  &amp;= \delta^{\beta_3}_{\alpha_0}X^{(k-1)}_{\beta_0,\sigma_1\beta_1 + \delta_1\alpha_1,\sigma_2\beta_2 + \delta_2\alpha_2,\alpha_3}.\end{split}\]</div>
+<p>Therefore:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\partial_{\omega^{(k)}_\alpha}\mathcal L &amp;= \sum_{\beta_0,\beta_1,\beta_2,\beta_3}\varepsilon^{(k)}_\beta\partial_{\omega^{(k)}_\alpha}X^{(k)}_\beta
+= \sum_{\beta_0,\beta_1,\beta_2}\varepsilon^{(k)}_{\beta_0,\beta_1,\beta_2,\alpha_0}X^{(k)}_{\beta_0,\sigma_1\beta_1 + \delta_1\alpha_1,\sigma_2\beta_2 + \delta_2\alpha_2,\alpha_3} \\
+&amp;= \sum_{\beta_0,\beta_1,\beta_2}\pi_{\tau_{0,3}}\varepsilon^{(k)}_{\alpha_0,\beta_1,\beta_2,\beta_0}\pi_{\tau_{0,3}}X^{(k-1)}_{\alpha_3,\sigma_1\beta_1 + \delta_1\alpha_1,\sigma_2\beta_2 + \delta_2\alpha_2,\beta_0}
+= \pi_{\tau_{0,3}}\Lambda^{(k)}_{(\pi_{\tau_{0,3}}\varepsilon^{(k)}, \mathbf{0})}(\pi_{\tau_{0,3}}X^{(k-1)}; \delta, \sigma)_\alpha,\end{split}\]</div>
+<p>i.e. the backward pass is also a convolution where strides and dilations have been swapped and without biases.</p>
+<p>For the biases, it is more trivial:</p>
+<div class="math notranslate nohighlight">
+\[\partial_{b^{(k)}_i}\mathcal L = \sum_{\beta}\varepsilon^{(k)}_\beta\partial_{b^{(k)}_i}X^{(k)}_\beta
+= \sum_{\beta}\varepsilon^{(k)}_\beta\delta_i^{\beta_3} = \sum_{\beta_0,\beta_1,\beta_2}\varepsilon^{(k)}_{\beta_0,\beta_1,\beta_2,i}.\]</div>
+<p>Finally, for the signal propagation, the formula is way less trivial:</p>
+<div class="math notranslate nohighlight">
+\[\partial_{X^{(k-1)}_\alpha}\mathcal L = \sum_{\beta}\varepsilon^{(k)}_\beta\partial_{X^{(k-1)}_\alpha}X^{(k)}_\beta
+ = \sum_{\beta_1}\sum_{\beta_2}\sum_{\beta_3}\sum_{\gamma_1}\sum_{\gamma_2}\varepsilon^{(k)}_{\alpha_0,\beta_1,\beta_2,\beta_3}\omega^{(k)}_{\beta_3,\gamma_1,\gamma_2,\alpha_3}\delta_{\sigma_1\beta_1+\delta_1\gamma_1}^{\alpha_1}\delta_{\sigma_2\beta_2+\delta_2\gamma_2}^{\alpha_2}.\]</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="FC.html" class="btn btn-neutral float-left" title="Fully Connected" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../structure.html" class="btn btn-neutral float-right" title="Structure" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

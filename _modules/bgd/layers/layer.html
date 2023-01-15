@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bgd.layers.layer &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../math/mathematical_framework.html">Mathematical Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../structure.html">Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../bgd/modules.html">bgd</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">bgd.layers.layer</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for bgd.layers.layer</h1><div class="highlight"><pre>
+<span></span><span class="c1"># layers/layer.py</span>
+<span class="c1"># author : Antoine Passemiers, Robin Petit</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;Layer&#39;</span>
+<span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">bgd.errors</span> <span class="kn">import</span> <span class="n">NonLearnableLayerError</span>
+
+<div class="viewcode-block" id="Layer"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer">[docs]</a><span class="k">class</span> <span class="nc">Layer</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Base class for neural and non-neural layers.</span>
+<span class="sd">    Each layer must implement methods &#39;_forward&#39; and</span>
+<span class="sd">    &#39;_backward&#39;: the output shape during forward pass</span>
+<span class="sd">    must be equal to the input shape during backward pass,</span>
+<span class="sd">    and vice versa.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        copy (bool):</span>
+<span class="sd">            Whether to copy layer output.</span>
+<span class="sd">        save_input (bool):</span>
+<span class="sd">            Whether to keep a reference to the input array..</span>
+<span class="sd">        save_output (bool):</span>
+<span class="sd">            Whether to keep a reference to the output array.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        input_shape (tuple):</span>
+<span class="sd">            Shape of the input array.</span>
+<span class="sd">        current_input (:obj:`np.ndarray`):</span>
+<span class="sd">            Reference to the current input array.</span>
+<span class="sd">        current_output (:obj:`np.ndarray`):</span>
+<span class="sd">            Reference to the current output array.</span>
+<span class="sd">        propagate (bool):</span>
+<span class="sd">            Whether to propagate the signal. This is usually</span>
+<span class="sd">            set to False for the first layer of a sequential</span>
+<span class="sd">            model for example. Indeed, the first layer has no</span>
+<span class="sd">            neighbouring layer to transfer the signal to.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">save_input</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">save_output</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">copy</span> <span class="o">=</span> <span class="n">copy</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_input</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_output</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_output</span> <span class="o">=</span> <span class="n">save_output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_input</span> <span class="o">=</span> <span class="n">save_input</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="Layer.activate_propagation"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer.activate_propagation">[docs]</a>    <span class="k">def</span> <span class="nf">activate_propagation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Activate signal propagation during backpropagation. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Layer.deactivate_propagation"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer.deactivate_propagation">[docs]</a>    <span class="k">def</span> <span class="nf">deactivate_propagation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Deactivate signal propagation during backpropagation. &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="Layer.learnable"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer.learnable">[docs]</a>    <span class="k">def</span> <span class="nf">learnable</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Tells whether the layer has learnable parameters. &quot;&quot;&quot;</span>
+        <span class="n">parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">()</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="p">(</span><span class="n">parameters</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">parameters</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Layer.update_parameters"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer.update_parameters">[docs]</a>    <span class="k">def</span> <span class="nf">update_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delta_fragments</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Update parameters: base class has no learnable parameters.</span>
+<span class="sd">        Subclasses that are learnable must override this method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            delta_fragments (tuple):</span>
+<span class="sd">                Tuple of NumPy arrays. Each array is a parameter update vector</span>
+<span class="sd">                and is used to update parameters using the following formula:</span>
+<span class="sd">                params = params - delta_fragment.</span>
+<span class="sd">                The tuple can have a size &gt; 1 for convenience. For example,</span>
+<span class="sd">                a convolutional neural layer has one array to update the filters</span>
+<span class="sd">                weights and one array to update the biases:</span>
+<span class="sd">                weights = weights - delta_fragments[0]</span>
+<span class="sd">                biases  = biases  - delta_fragments[1]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="n">delta_fragments</span>  <span class="c1"># unused</span>
+        <span class="k">raise</span> <span class="n">NonLearnableLayerError</span><span class="p">(</span>
+            <span class="s2">&quot;Cannot update parameters of a </span><span class="si">%s</span><span class="s2"> layer&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Layer.forward"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer.forward">[docs]</a>    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapper method for method &#39;_forward&#39;. Given an input array,</span>
+<span class="sd">        checks the input shape, computes the output and saves the output if needed.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (:obj:`np.ndarray`):</span>
+<span class="sd">                Input array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_shape</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_input</span><span class="p">:</span> <span class="c1"># Save input if needed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_input</span> <span class="o">=</span> <span class="n">X</span>
+        <span class="n">current_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_forward</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">save_output</span><span class="p">:</span> <span class="c1"># Save output if needed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_output</span> <span class="o">=</span> <span class="n">current_output</span>
+            <span class="c1"># If needed and if the output does not produce</span>
+            <span class="c1"># a copy of the input , then the output is copied.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span> <span class="ow">and</span> <span class="n">np</span><span class="o">.</span><span class="n">may_share_memory</span><span class="p">(</span>
+                    <span class="n">X</span><span class="p">,</span> <span class="n">current_output</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">multiarray</span><span class="o">.</span><span class="n">MAY_SHARE_BOUNDS</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">current_output</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">current_output</span></div>
+
+<div class="viewcode-block" id="Layer.backward"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer.backward">[docs]</a>    <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapper method for method &#39;_backward&#39;. Given an input array,</span>
+<span class="sd">        checks the array shape, update parameters and propagate the</span>
+<span class="sd">        signal if needed (and if layer is learnable).</span>
+
+<span class="sd">        Returns a tuple of size 2 where first element is the signal to</span>
+<span class="sd">        propagate and the second element is the error gradient with respect</span>
+<span class="sd">        to the parameters of the layer. If propagation is deactivated</span>
+<span class="sd">        for current layer, then the signal is replaced by None.</span>
+<span class="sd">        If layer is non-learnable, the gradient is replaced by None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">propagate</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">learnable</span><span class="p">():</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_backward</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+                <span class="c1"># If wrapped method does not return a gradient vector,</span>
+                <span class="c1"># then replace it by None</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">out</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Propagation is deactivated -&gt; signal   == None</span>
+            <span class="c1"># Layer is non-learnable     -&gt; gradient == None</span>
+            <span class="k">return</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Layer.get_parameters"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer.get_parameters">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">get_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Retuns a tuple containing the parameters of the layer.</span>
+<span class="sd">        If layer is non-learnable, None is returned instead.</span>
+<span class="sd">        The tuple can have a size &gt; 1 for convenience. For example,</span>
+<span class="sd">        a convolutional neural layer has one array for the filters</span>
+<span class="sd">        weights and one array for the biases.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Layer._forward"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer._forward">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapped method for applying a forward pass on input X. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Layer._backward"><a class="viewcode-back" href="../../../bgd/bgd.layers.layer.html#bgd.layers.layer.Layer._backward">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_backward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">error</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapped method for applying a backward pass on input X. &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

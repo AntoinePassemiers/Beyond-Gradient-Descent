@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bgd.batch &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../math/mathematical_framework.html">Mathematical Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../structure.html">Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bgd/modules.html">bgd</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">bgd.batch</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for bgd.batch</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; This module contains all the different batching methods</span>
+<span class="sd">that are implemented. Any new batching method needs to inherit</span>
+<span class="sd">from :class:`bgd.batch.Batching` and to implement its abstract</span>
+<span class="sd">methods (:obj:`_start` and :obj:`next`). &quot;&quot;&quot;</span>
+
+<span class="c1"># batch.py: Batching methods for neural networks</span>
+<span class="c1"># author : Antoine Passemiers, Robin Petit</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;SGDBatching&#39;</span><span class="p">]</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<div class="viewcode-block" id="Batching"><a class="viewcode-back" href="../../bgd/bgd.batch.html#bgd.batch.Batching">[docs]</a><span class="k">class</span> <span class="nc">Batching</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Base class for generating batches.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        warm (bool):</span>
+<span class="sd">            Whether a dataset has been passed to the</span>
+<span class="sd">            batching algorithm. Once it is warm,</span>
+<span class="sd">            method &#39;next&#39; can be called to retrieve</span>
+<span class="sd">            a batch.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warm</span> <span class="o">=</span> <span class="kc">False</span>
+
+<div class="viewcode-block" id="Batching.start"><a class="viewcode-back" href="../../bgd/bgd.batch.html#bgd.batch.Batching.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapper method for providing a dataset</span>
+<span class="sd">        to the batching algorithm.</span>
+<span class="sd">        This *must* be called before to method :meth:`next` is called.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (:obj:`np.ndarray`): Input samples</span>
+<span class="sd">            y (:obj:`np.ndarray`): Target values</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warm</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="Batching.next"><a class="viewcode-back" href="../../bgd/bgd.batch.html#bgd.batch.Batching.next">[docs]</a>    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapper method for retrieving a batch from</span>
+<span class="sd">        the provided dataset.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :</span>
+<span class="sd">                X (:obj:`np.ndarray`):</span>
+<span class="sd">                    Batch samples.</span>
+<span class="sd">                y (:obj:`np.ndarray`):</span>
+<span class="sd">                    Batch target values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">warm</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_next</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Batching._start"><a class="viewcode-back" href="../../bgd/bgd.batch.html#bgd.batch.Batching._start">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapped method for providing a dataset</span>
+<span class="sd">        to the batching algorithm. Subclasses must</span>
+<span class="sd">        override this method.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+
+<div class="viewcode-block" id="Batching._next"><a class="viewcode-back" href="../../bgd/bgd.batch.html#bgd.batch.Batching._next">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Wrapped method for retrieving a batch from</span>
+<span class="sd">        the provided dataset. Subclasses must override</span>
+<span class="sd">        this method.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div></div>
+
+
+<div class="viewcode-block" id="SGDBatching"><a class="viewcode-back" href="../../bgd/bgd.batch.html#bgd.batch.SGDBatching">[docs]</a><span class="k">class</span> <span class="nc">SGDBatching</span><span class="p">(</span><span class="n">Batching</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Stochastic Gradient Descent Batching algorithm.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        batch_size (int):</span>
+<span class="sd">            Size of each random batch.</span>
+<span class="sd">        shuffle (bool):</span>
+<span class="sd">            Whether to shuffle the dataset before</span>
+<span class="sd">            extracting a batch from it.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">Batching</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shuffle</span> <span class="o">=</span> <span class="n">shuffle</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batches</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="SGDBatching._start"><a class="viewcode-back" href="../../bgd/bgd.batch.html#bgd.batch.SGDBatching._start">[docs]</a>    <span class="k">def</span> <span class="nf">_start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Provide a dataset to the batching algorithm.</span>
+<span class="sd">        This *must* be called before to method :meth:`next` is called.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (:obj:`np.ndarray`): Input samples.</span>
+<span class="sd">            y (:obj:`np.ndarray`): Target values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mini_batches</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SGDBatching._next"><a class="viewcode-back" href="../../bgd/bgd.batch.html#bgd.batch.SGDBatching._next">[docs]</a>    <span class="k">def</span> <span class="nf">_next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Retrieves next batch using a generator function.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :</span>
+<span class="sd">                X (:obj:`np.ndarray`):</span>
+<span class="sd">                    Batch samples.</span>
+<span class="sd">                y (:obj:`np.ndarray`):</span>
+<span class="sd">                    Batch target values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">batches</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SGDBatching.mini_batches"><a class="viewcode-back" href="../../bgd/bgd.batch.html#bgd.batch.SGDBatching.mini_batches">[docs]</a>    <span class="k">def</span> <span class="nf">mini_batches</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Generator function that iteratively yields batches.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (:obj:`np.ndarray`): Input samples.</span>
+<span class="sd">            y (:obj:`np.ndarray`): Target values.</span>
+
+<span class="sd">        Yields:</span>
+<span class="sd">            :</span>
+<span class="sd">                X (:obj:`np.ndarray`):</span>
+<span class="sd">                    Batch samples.</span>
+<span class="sd">                y (:obj:`np.ndarray`):</span>
+<span class="sd">                    Batch target values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">shuffle</span><span class="p">:</span> <span class="c1"># If shuffled dataset</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size</span><span class="p">]</span>
+        <span class="k">yield</span> <span class="kc">None</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

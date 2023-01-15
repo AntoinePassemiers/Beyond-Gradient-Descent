@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bgd.batch module &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bgd.cost module" href="bgd.cost.html" />
+    <link rel="prev" title="bgd.layers.operators module" href="bgd.layers.operators.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../math/mathematical_framework.html">Mathematical Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../structure.html">Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">bgd</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="bgd.html">bgd package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="bgd.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="bgd.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">bgd.batch module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.cost.html">bgd.cost module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.errors.html">bgd.errors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.initializers.html">bgd.initializers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.nn.html">bgd.nn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.optimizers.html">bgd.optimizers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.utils.html">bgd.utils module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">bgd</a></li>
+          <li class="breadcrumb-item"><a href="bgd.html">bgd package</a></li>
+      <li class="breadcrumb-item active">bgd.batch module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/bgd/bgd.batch.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-bgd.batch">
+<span id="bgd-batch-module"></span><h1>bgd.batch module<a class="headerlink" href="#module-bgd.batch" title="Permalink to this headline"></a></h1>
+<p>This module contains all the different batching methods
+that are implemented. Any new batching method needs to inherit
+from <a class="reference internal" href="#bgd.batch.Batching" title="bgd.batch.Batching"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.batch.Batching</span></code></a> and to implement its abstract
+methods (<code class="xref py py-obj docutils literal notranslate"><span class="pre">_start</span></code> and <code class="xref py py-obj docutils literal notranslate"><span class="pre">next</span></code>).</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="bgd.batch.Batching">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bgd.batch.</span></span><span class="sig-name descname"><span class="pre">Batching</span></span><a class="reference internal" href="../_modules/bgd/batch.html#Batching"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.batch.Batching" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for generating batches.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="bgd.batch.Batching.warm">
+<span class="sig-name descname"><span class="pre">warm</span></span><a class="headerlink" href="#bgd.batch.Batching.warm" title="Permalink to this definition"></a></dt>
+<dd><p>Whether a dataset has been passed to the
+batching algorithm. Once it is warm,
+method ‘next’ can be called to retrieve
+a batch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.batch.Batching._next">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_next</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/batch.html#Batching._next"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.batch.Batching._next" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapped method for retrieving a batch from
+the provided dataset. Subclasses must override
+this method.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.batch.Batching._start">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/batch.html#Batching._start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.batch.Batching._start" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapped method for providing a dataset
+to the batching algorithm. Subclasses must
+override this method.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.batch.Batching.next">
+<span class="sig-name descname"><span class="pre">next</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/batch.html#Batching.next"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.batch.Batching.next" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper method for retrieving a batch from
+the provided dataset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>X (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>):</dt><dd><p>Batch samples.</p>
+</dd>
+<dt>y (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>):</dt><dd><p>Batch target values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.batch.Batching.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/batch.html#Batching.start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.batch.Batching.start" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapper method for providing a dataset
+to the batching algorithm.
+This <em>must</em> be called before to method <a class="reference internal" href="#bgd.batch.Batching.next" title="bgd.batch.Batching.next"><code class="xref py py-meth docutils literal notranslate"><span class="pre">next()</span></code></a> is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Input samples</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Target values</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="bgd.batch.SGDBatching">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bgd.batch.</span></span><span class="sig-name descname"><span class="pre">SGDBatching</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shuffle</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/batch.html#SGDBatching"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.batch.SGDBatching" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#bgd.batch.Batching" title="bgd.batch.Batching"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.batch.Batching</span></code></a></p>
+<p>Stochastic Gradient Descent Batching algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>batch_size</strong> (<em>int</em>) – Size of each random batch.</p></li>
+<li><p><strong>shuffle</strong> (<em>bool</em>) – Whether to shuffle the dataset before
+extracting a batch from it.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.batch.SGDBatching._next">
+<span class="sig-name descname"><span class="pre">_next</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/batch.html#SGDBatching._next"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.batch.SGDBatching._next" title="Permalink to this definition"></a></dt>
+<dd><p>Retrieves next batch using a generator function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>X (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>):</dt><dd><p>Batch samples.</p>
+</dd>
+<dt>y (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>):</dt><dd><p>Batch target values.</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.batch.SGDBatching._start">
+<span class="sig-name descname"><span class="pre">_start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/batch.html#SGDBatching._start"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.batch.SGDBatching._start" title="Permalink to this definition"></a></dt>
+<dd><p>Provide a dataset to the batching algorithm.
+This <em>must</em> be called before to method <code class="xref py py-meth docutils literal notranslate"><span class="pre">next()</span></code> is called.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Input samples.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Target values.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.batch.SGDBatching.mini_batches">
+<span class="sig-name descname"><span class="pre">mini_batches</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/batch.html#SGDBatching.mini_batches"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.batch.SGDBatching.mini_batches" title="Permalink to this definition"></a></dt>
+<dd><p>Generator function that iteratively yields batches.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>X</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Input samples.</p></li>
+<li><p><strong>y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Target values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Yields</dt>
+<dd class="field-even"><dl class="simple">
+<dt>X (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>):</dt><dd><p>Batch samples.</p>
+</dd>
+<dt>y (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>):</dt><dd><p>Batch target values.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bgd.layers.operators.html" class="btn btn-neutral float-left" title="bgd.layers.operators module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bgd.cost.html" class="btn btn-neutral float-right" title="bgd.cost module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

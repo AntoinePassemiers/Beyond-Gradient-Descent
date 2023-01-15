@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Backpropagation &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Layers" href="layers.html" />
+    <link rel="prev" title="Introduction and Notations" href="intro.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="mathematical_framework.html">Mathematical Framework</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="intro.html">Introduction and Notations</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Backpropagation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="layers.html">Layers</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../structure.html">Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../bgd/modules.html">bgd</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="mathematical_framework.html">Mathematical Framework</a></li>
+      <li class="breadcrumb-item active">Backpropagation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/math/backprop.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="backpropagation">
+<h1>Backpropagation<a class="headerlink" href="#backpropagation" title="Permalink to this headline"></a></h1>
+<p>Backpropagation is an iterative process aiming to find the optimum of a cost (loss) function.</p>
+<p>Each parameter <span class="math notranslate nohighlight">\(\theta^{(k)}_\alpha\)</span> is iteratively updated with the following formula:</p>
+<div class="math notranslate nohighlight">
+\[\theta^{(k)}_\alpha \leftarrow \theta^{(k)}_\alpha - \eta\partial_{\theta^{(k)}_\alpha}\mathcal L(X).\]</div>
+<p>This partial derivative can be computed using the chain rule:</p>
+<div class="math notranslate nohighlight">
+\[\partial_{\theta^{(k)}_\alpha}\mathcal L = \sum_\beta\partial_{X^{(k)}_\beta}\mathcal L\partial_{\theta^{(k)}_\alpha}X^{(k)}_\beta.\]</div>
+<p>For the sake of convenience, we write <span class="math notranslate nohighlight">\(\varepsilon^{(k)} = \nabla_{X^{(k)}}\mathcal L\)</span>, which is
+the signal back-propagated by layer <span class="math notranslate nohighlight">\(k\)</span> to layer <span class="math notranslate nohighlight">\(k-1\)</span>.</p>
+<p>Therefore, each layer needs to compute the derivative of the loss w.r.t. its parameters in order to move
+towards the optimum, but each layer also needs to compute the derivative of the loss w.r.t. its input, i.e.
+<span class="math notranslate nohighlight">\(\nabla_{X^{(k)}}\)</span>.</p>
+<p>That’s where the name <em>back propagation</em> comes from: each layer needs to propagate a signal to the layer before
+it so that all the derivatives w.r.t. parameters can be computed properly.</p>
+<p>The backpropagation starts by taking the derivative of the loss w.r.t. the predictions:
+<span class="math notranslate nohighlight">\(\nabla_{\hat y}\mathcal L = \nabla_{X^{(K)}}\mathcal L = \varepsilon^{(K)}\)</span>.
+This is why the cost functions defined in <a class="reference internal" href="../bgd/bgd.cost.html#module-bgd.cost" title="bgd.cost"><code class="xref py py-mod docutils literal notranslate"><span class="pre">bgd.cost</span></code></a> need to have a <code class="xref py py-obj docutils literal notranslate"><span class="pre">_grad</span></code> method defined:
+differentiation is automatized.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="intro.html" class="btn btn-neutral float-left" title="Introduction and Notations" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="layers.html" class="btn btn-neutral float-right" title="Layers" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

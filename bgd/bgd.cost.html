@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bgd.cost module &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bgd.errors module" href="bgd.errors.html" />
+    <link rel="prev" title="bgd.batch module" href="bgd.batch.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../math/mathematical_framework.html">Mathematical Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../structure.html">Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">bgd</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="bgd.html">bgd package</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="bgd.html#subpackages">Subpackages</a></li>
+<li class="toctree-l3 current"><a class="reference internal" href="bgd.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="bgd.batch.html">bgd.batch module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">bgd.cost module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.errors.html">bgd.errors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.initializers.html">bgd.initializers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.nn.html">bgd.nn module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.optimizers.html">bgd.optimizers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="bgd.utils.html">bgd.utils module</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">bgd</a></li>
+          <li class="breadcrumb-item"><a href="bgd.html">bgd package</a></li>
+      <li class="breadcrumb-item active">bgd.cost module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/bgd/bgd.cost.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-bgd.cost">
+<span id="bgd-cost-module"></span><h1>bgd.cost module<a class="headerlink" href="#module-bgd.cost" title="Permalink to this headline"></a></h1>
+<p>This module contains all the cost (loss) functions that
+are implemented. There exists a separation between regression
+and classification classes.</p>
+<p>Each cost function implemented needs to implement the
+computation of the cost (obviously) and <em>also</em> the gradient
+of the function w.r.t. <code class="xref py py-obj docutils literal notranslate"><span class="pre">y_hat</span></code>.</p>
+<p>Any new cost function needs to inherit from either
+<a class="reference internal" href="#bgd.cost.RegressionCost" title="bgd.cost.RegressionCost"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.cost.RegressionCost</span></code></a> or <a class="reference internal" href="#bgd.cost.ClassificationCost" title="bgd.cost.ClassificationCost"><code class="xref py py-class docutils literal notranslate"><span class="pre">ClassificationCost</span></code></a>
+depending on its use.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="bgd.cost.ClassificationCost">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bgd.cost.</span></span><span class="sig-name descname"><span class="pre">ClassificationCost</span></span><a class="reference internal" href="../_modules/bgd/cost.html#ClassificationCost"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.ClassificationCost" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#bgd.cost.Cost" title="bgd.cost.Cost"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.cost.Cost</span></code></a></p>
+<p>Base class for all the cost functions used in classification.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.ClassificationCost._print_fitness">
+<span class="sig-name descname"><span class="pre">_print_fitness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#ClassificationCost._print_fitness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.ClassificationCost._print_fitness" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapped method for printing the cost value/accuracy
+of the model on provided data.</p>
+<p>:param see <code class="xref py py-meth docutils literal notranslate"><span class="pre">print_fitness()</span></code>.:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.ClassificationCost.accuracy">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#ClassificationCost.accuracy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.ClassificationCost.accuracy" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the accuracy of y_hat w.r.t. y.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="bgd.cost.Cost">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bgd.cost.</span></span><span class="sig-name descname"><span class="pre">Cost</span></span><a class="reference internal" href="../_modules/bgd/cost.html#Cost"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.Cost" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Base class for error operators.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Array of shape (n_samples, output_size) representing
+the expected outputs. Must have same length as X.</p></li>
+<li><p><strong>y_hat</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Array of shape (n_samples, output_size) representing
+the predictions. Must have same length as Y.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.Cost._eval">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#Cost._eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.Cost._eval" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapped method for evaluating the error operator.
+Subclasses must override this method.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.Cost._grad">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#Cost._grad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.Cost._grad" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapped method for evaluating the error gradient.
+Subclasses must override this method.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.Cost._print_fitness">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_print_fitness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#Cost._print_fitness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.Cost._print_fitness" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapped method for printing the cost value/accuracy
+of the model on provided data.</p>
+<p>:param see <a class="reference internal" href="#bgd.cost.Cost.print_fitness" title="bgd.cost.Cost.print_fitness"><code class="xref py py-meth docutils literal notranslate"><span class="pre">print_fitness()</span></code></a>.:</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.Cost.eval">
+<span class="sig-name descname"><span class="pre">eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#Cost.eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.Cost.eval" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluates the error operator and returns an array of
+shape (n_samples,) with the per-sample cost.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>loss:</dt><dd><p>The error function value for each sample
+of the batch. <cite>shape == (len(y),)</cite></p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.Cost.grad">
+<span class="sig-name descname"><span class="pre">grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#Cost.grad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.Cost.grad" title="Permalink to this definition"></a></dt>
+<dd><p>Evaluates the gradient of the error. The error must be
+not depend on to the model parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>grad:</dt><dd><p>The gradient of the error for each sample
+of the batch. <cite>shape == (len(y),)</cite></p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.Cost.name">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#Cost.name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.Cost.name" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the name of the cost function.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.Cost.print_fitness">
+<span class="sig-name descname"><span class="pre">print_fitness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end='\n'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">files=&lt;_io.TextIOWrapper</span> <span class="pre">name='&lt;stdout&gt;'</span> <span class="pre">mode='w'</span> <span class="pre">encoding='utf-8'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#Cost.print_fitness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.Cost.print_fitness" title="Permalink to this definition"></a></dt>
+<dd><p>Prints a measure of the fitness/cost.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Ground truth.</p></li>
+<li><p><strong>y_hat</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>) – Prediction of the model.</p></li>
+<li><p><strong>end</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – String to write at the end. Defaults to ‘n’.</p></li>
+<li><p><strong>files</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code> of file-like objects or file-like object) – File(s) to write the fitness in. Defaults to stdout.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="bgd.cost.CrossEntropy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bgd.cost.</span></span><span class="sig-name descname"><span class="pre">CrossEntropy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">epsilon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1e-15</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#CrossEntropy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.CrossEntropy" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#bgd.cost.ClassificationCost" title="bgd.cost.ClassificationCost"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.cost.ClassificationCost</span></code></a></p>
+<p>Differentiable cross-entropy operator.</p>
+<div class="math notranslate nohighlight">
+\[C(y, \hat y) = -\frac 1n\sum_{i=1}^n\big[y_i\log\hat y_i + (1-y_i)\log(1-\hat y_i)\big]\]</div>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="bgd.cost.CrossEntropy.epsilon">
+<span class="sig-name descname"><span class="pre">epsilon</span></span><a class="headerlink" href="#bgd.cost.CrossEntropy.epsilon" title="Permalink to this definition"></a></dt>
+<dd><p>parameter for numerical stability</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.CrossEntropy._eval">
+<span class="sig-name descname"><span class="pre">_eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#CrossEntropy._eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.CrossEntropy._eval" title="Permalink to this definition"></a></dt>
+<dd><p>Return cross-entropy metric.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Ground truth labels.</p></li>
+<li><p><strong>y_hat</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Predicted values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>loss:</dt><dd><p>The error function value for each sample
+of the batch. <cite>shape == (len(y),)</cite></p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.CrossEntropy._grad">
+<span class="sig-name descname"><span class="pre">_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#CrossEntropy._grad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.CrossEntropy._grad" title="Permalink to this definition"></a></dt>
+<dd><p>Return derivative of cross-entropy function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Ground truth labels.</p></li>
+<li><p><strong>y_hat</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Predicted values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>grad:</dt><dd><p>The gradient of the error for each sample
+of the batch. <cite>shape == (len(y),)</cite></p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.CrossEntropy.name">
+<span class="sig-name descname"><span class="pre">name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#CrossEntropy.name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.CrossEntropy.name" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the name of the cost function.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="bgd.cost.MSE">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bgd.cost.</span></span><span class="sig-name descname"><span class="pre">MSE</span></span><a class="reference internal" href="../_modules/bgd/cost.html#MSE"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.MSE" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#bgd.cost.RegressionCost" title="bgd.cost.RegressionCost"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.cost.RegressionCost</span></code></a></p>
+<p>Differentiable Mean Squared Error operator.</p>
+<div class="math notranslate nohighlight">
+\[C(y, \hat y) = \frac 1{2n}\sum_{i=1}^n\big(y_i - \hat y_i\big)^2\]</div>
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.MSE._eval">
+<span class="sig-name descname"><span class="pre">_eval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#MSE._eval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.MSE._eval" title="Permalink to this definition"></a></dt>
+<dd><p>Return mean squared error.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Ground truth values.</p></li>
+<li><p><strong>y_hat</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Predicted values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>loss:</dt><dd><p>The error function value for each sample
+of the batch. <cite>shape == (len(y),)</cite></p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.MSE._grad">
+<span class="sig-name descname"><span class="pre">_grad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#MSE._grad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.MSE._grad" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the derivative of mean squared error.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>y</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Ground truth values.</p></li>
+<li><p><strong>y_hat</strong> (<code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code>) – Predicted values.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>grad:</dt><dd><p>The gradient of the error for each sample
+of the batch. <cite>shape == (len(y),)</cite></p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">np.ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.MSE.name">
+<span class="sig-name descname"><span class="pre">name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#MSE.name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.MSE.name" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the name of the cost function.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="bgd.cost.RegressionCost">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bgd.cost.</span></span><span class="sig-name descname"><span class="pre">RegressionCost</span></span><a class="reference internal" href="../_modules/bgd/cost.html#RegressionCost"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.RegressionCost" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#bgd.cost.Cost" title="bgd.cost.Cost"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.cost.Cost</span></code></a></p>
+<p>Base class for all the cost functions used in regression.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.cost.RegressionCost._print_fitness">
+<span class="sig-name descname"><span class="pre">_print_fitness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_hat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/cost.html#RegressionCost._print_fitness"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.cost.RegressionCost._print_fitness" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapped method for printing the cost value/accuracy
+of the model on provided data.</p>
+<p>:param see <code class="xref py py-meth docutils literal notranslate"><span class="pre">print_fitness()</span></code>.:</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bgd.batch.html" class="btn btn-neutral float-left" title="bgd.batch module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bgd.errors.html" class="btn btn-neutral float-right" title="bgd.errors module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bgd.layers.conv2d module &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="bgd.layers.dropout module" href="bgd.layers.dropout.html" />
+    <link rel="prev" title="bgd.layers.conv module" href="bgd.layers.conv.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../math/mathematical_framework.html">Mathematical Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../structure.html">Structure</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">bgd</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="bgd.html">bgd package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="bgd.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4 current"><a class="reference internal" href="bgd.layers.html">bgd.layers package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="bgd.html#submodules">Submodules</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">bgd</a></li>
+          <li class="breadcrumb-item"><a href="bgd.html">bgd package</a></li>
+          <li class="breadcrumb-item"><a href="bgd.layers.html">bgd.layers package</a></li>
+      <li class="breadcrumb-item active">bgd.layers.conv2d module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/bgd/bgd.layers.conv2d.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-bgd.layers.conv2d">
+<span id="bgd-layers-conv2d-module"></span><h1>bgd.layers.conv2d module<a class="headerlink" href="#module-bgd.layers.conv2d" title="Permalink to this headline"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="bgd.layers.conv2d.Convolutional2D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">bgd.layers.conv2d.</span></span><span class="sig-name descname"><span class="pre">Convolutional2D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filter_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_filters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strides=(1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dilations=(1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_bias=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initializer=&lt;bgd.initializers.GlorotUniformInitializer</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias_initializer=&lt;bgd.initializers.ZeroInitializer</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=4</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/layers/conv2d.html#Convolutional2D"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.layers.conv2d.Convolutional2D" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="bgd.layers.layer.html#bgd.layers.layer.Layer" title="bgd.layers.layer.Layer"><code class="xref py py-class docutils literal notranslate"><span class="pre">bgd.layers.layer.Layer</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.layers.conv2d.Convolutional2D._backward">
+<span class="sig-name descname"><span class="pre">_backward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">error</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/layers/conv2d.html#Convolutional2D._backward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.layers.conv2d.Convolutional2D._backward" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapped method for applying a backward pass on input X.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.layers.conv2d.Convolutional2D._forward">
+<span class="sig-name descname"><span class="pre">_forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/layers/conv2d.html#Convolutional2D._forward"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.layers.conv2d.Convolutional2D._forward" title="Permalink to this definition"></a></dt>
+<dd><p>Wrapped method for applying a forward pass on input X.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.layers.conv2d.Convolutional2D.get_parameters">
+<span class="sig-name descname"><span class="pre">get_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/layers/conv2d.html#Convolutional2D.get_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.layers.conv2d.Convolutional2D.get_parameters" title="Permalink to this definition"></a></dt>
+<dd><p>Retuns a tuple containing the parameters of the layer.
+If layer is non-learnable, None is returned instead.
+The tuple can have a size &gt; 1 for convenience. For example,
+a convolutional neural layer has one array for the filters
+weights and one array for the biases.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="bgd.layers.conv2d.Convolutional2D.update_parameters">
+<span class="sig-name descname"><span class="pre">update_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">delta_fragments</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/bgd/layers/conv2d.html#Convolutional2D.update_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#bgd.layers.conv2d.Convolutional2D.update_parameters" title="Permalink to this definition"></a></dt>
+<dd><p>Update parameters: base class has no learnable parameters.
+Subclasses that are learnable must override this method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>delta_fragments</strong> (<em>tuple</em>) – Tuple of NumPy arrays. Each array is a parameter update vector
+and is used to update parameters using the following formula:
+params = params - delta_fragment.
+The tuple can have a size &gt; 1 for convenience. For example,
+a convolutional neural layer has one array to update the filters
+weights and one array to update the biases:
+weights = weights - delta_fragments[0]
+biases  = biases  - delta_fragments[1]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bgd.layers.conv.html" class="btn btn-neutral float-left" title="bgd.layers.conv module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="bgd.layers.dropout.html" class="btn btn-neutral float-right" title="bgd.layers.dropout module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

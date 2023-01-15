@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bgd.nn &mdash; Beyond Gradient Descent 0.1 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> Beyond Gradient Descent
+          </a>
+              <div class="version">
+                0
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../math/mathematical_framework.html">Mathematical Framework</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../structure.html">Structure</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../bgd/modules.html">bgd</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Beyond Gradient Descent</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">bgd.nn</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for bgd.nn</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; This module contains the :class:`bgd.nn.NeuralStack`</span>
+<span class="sd">class that represents a linear neural network (LNN).</span>
+
+<span class="sd">Any other model of neural nets shall be written down here. &quot;&quot;&quot;</span>
+
+<span class="c1"># nn.py</span>
+<span class="c1"># author : Antoine Passemiers, Robin Petit</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s1">&#39;split_train_val&#39;</span><span class="p">,</span> <span class="s1">&#39;binarize_labels&#39;</span><span class="p">,</span> <span class="s1">&#39;NeuralStack&#39;</span>
+<span class="p">]</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">bgd.batch</span> <span class="kn">import</span> <span class="n">Batching</span>
+<span class="kn">from</span> <span class="nn">bgd.cost</span> <span class="kn">import</span> <span class="n">ClassificationCost</span><span class="p">,</span> <span class="n">Cost</span>
+<span class="kn">from</span> <span class="nn">bgd.errors</span> <span class="kn">import</span> <span class="n">RequiredComponentError</span><span class="p">,</span> <span class="n">WrongComponentTypeError</span>
+<span class="kn">from</span> <span class="nn">bgd.layers</span> <span class="kn">import</span> <span class="n">Layer</span><span class="p">,</span> <span class="n">Dropout</span>
+<span class="kn">from</span> <span class="nn">bgd.optimizers</span> <span class="kn">import</span> <span class="n">Optimizer</span>
+<span class="kn">from</span> <span class="nn">bgd.utils</span> <span class="kn">import</span> <span class="n">log</span>
+
+<div class="viewcode-block" id="split_train_val"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.split_train_val">[docs]</a><span class="k">def</span> <span class="nf">split_train_val</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">validation_fraction</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Splits randomly the dataset (X, y) into a training set</span>
+<span class="sd">    and a validation set.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        X (:obj:`np.ndarray`):</span>
+<span class="sd">            Matrix of samples. shape == (n_instances, n_features).</span>
+<span class="sd">        y (:obj:`np.ndarray`):</span>
+<span class="sd">            Vector of expected outputs. shape == (n_instances,)</span>
+<span class="sd">            or (n_instances, n_classes) if binarized.</span>
+<span class="sd">        validation_fraction (float):</span>
+<span class="sd">            Proportion of samples to be kept for validation.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :</span>
+<span class="sd">            X_train (:obj:`np.ndarray`):</span>
+<span class="sd">                Matrix of training samples.</span>
+<span class="sd">                len(X_train) == len(X) * (1 - validation_fraction)</span>
+<span class="sd">            y_train (:obj:`np.ndarray`):</span>
+<span class="sd">                Vector of training expected outputs.</span>
+<span class="sd">                len(y_train) == len(y) * (1 - validation_fraction)</span>
+<span class="sd">            X_test (:obj:`np.ndarray`):</span>
+<span class="sd">                Matrix of test samples.</span>
+<span class="sd">                len(X_test) == len(X) * validation_fraction</span>
+<span class="sd">            y_test (:obj:`np.ndarray`):</span>
+<span class="sd">                Vector of test expected outputs.</span>
+<span class="sd">                len(y_test) == len(y) * validation_fraction</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError:</span>
+<span class="sd">            If validation_fraction is not in [0, 1].</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">validation_fraction</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{:g}</span><span class="s1"> is not a valid fraction&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">validation_fraction</span><span class="p">))</span>
+    <span class="n">split</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.</span> <span class="o">-</span> <span class="n">validation_fraction</span><span class="p">))</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">X</span><span class="p">[</span><span class="n">indices</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="n">indices</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">X</span><span class="p">[:</span><span class="n">split</span><span class="p">],</span> <span class="n">y</span><span class="p">[:</span><span class="n">split</span><span class="p">],</span> <span class="n">X</span><span class="p">[</span><span class="n">split</span><span class="p">:],</span> <span class="n">y</span><span class="p">[</span><span class="n">split</span><span class="p">:]</span></div>
+
+<div class="viewcode-block" id="binarize_labels"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.binarize_labels">[docs]</a><span class="k">def</span> <span class="nf">binarize_labels</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Transforms a N-valued vector of labels into a binary vector.</span>
+<span class="sd">    If N classes are present, they *must* be 0 to N-1.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        y (:obj:`np.ndarray`):</span>
+<span class="sd">            Vector of classes.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :obj:`np.ndarray`:</span>
+<span class="sd">            binary_y:</span>
+<span class="sd">                Binary matrix of shape (n_instances, n_classes)</span>
+<span class="sd">                s.t. `binary_y[i,j] == 1` iff `y[i] == j`.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        &gt;&gt;&gt; y = np.array([0, 1, 0, 0, 1, 1, 0])</span>
+<span class="sd">        &gt;&gt;&gt; binarize_labels(y)</span>
+<span class="sd">        array([[1, 0],</span>
+<span class="sd">               [0, 1],</span>
+<span class="sd">               [1, 0],</span>
+<span class="sd">               [1, 0],</span>
+<span class="sd">               [0, 1],</span>
+<span class="sd">               [0, 1],</span>
+<span class="sd">               [1, 0]])</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">unique_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+    <span class="n">n_classes</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_values</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">set</span><span class="p">(</span><span class="n">unique_values</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">set</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">n_classes</span><span class="p">)):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The </span><span class="si">{}</span><span class="s1"> classes must be encoded 0 to </span><span class="si">{}</span><span class="s1">&#39;</span> \
+                         <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">n_classes</span><span class="p">,</span> <span class="n">n_classes</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">binary_y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">n_classes</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_classes</span><span class="p">):</span>
+        <span class="n">binary_y</span><span class="p">[:,</span> <span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">y</span> <span class="o">==</span> <span class="n">c</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">binary_y</span></div>
+
+
+<div class="viewcode-block" id="NeuralStack"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.NeuralStack">[docs]</a><span class="k">class</span> <span class="nc">NeuralStack</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot; Sequential model that can be viewed as a stack of layers.</span>
+<span class="sd">    Backpropagation is simplified because the error gradient</span>
+<span class="sd">    with respect to the parameters of any layer is the gradient</span>
+<span class="sd">    of a composition of functions (defined by all successor layers)</span>
+<span class="sd">    and is decomposed using the chain rule.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        layers (list):</span>
+<span class="sd">            List of layers, where layers[0] is the input layer and</span>
+<span class="sd">            layers[-1] is the output layer.</span>
+<span class="sd">        batch_op (:class:`bgd.batch.Batching`):</span>
+<span class="sd">            Batching method to use in order to perform one step of the</span>
+<span class="sd">            backpropagation algorithm.</span>
+<span class="sd">        cost_op (:class:`bgd.cost.Cost`):</span>
+<span class="sd">            Error metric to use in order to evaluate model performance.</span>
+<span class="sd">        optimizer (:class:`bgd.optimizers.Optimizer`):</span>
+<span class="sd">            Optimizer to use in order to update the parameters of the</span>
+<span class="sd">            model during backpropagation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_op</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cost_op</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="NeuralStack.add"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.NeuralStack.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">component</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Adds a component to the model: it can be either a layer</span>
+<span class="sd">        or a special component like an optimizer. Some components</span>
+<span class="sd">        are mandatory to train the model. The architecture of the</span>
+<span class="sd">        model is defined by the layers that are provided to this</span>
+<span class="sd">        method. Thus, the order is taken into account when adding</span>
+<span class="sd">        layers. However, the order has no importance when adding</span>
+<span class="sd">        special components like optimizers, error metrics, etc.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            component (object):</span>
+<span class="sd">                Component to add to the model (Layer or special component).</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            WrongComponentTypeError:</span>
+<span class="sd">                If the type of component is not recognized.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">Layer</span><span class="p">):</span>
+            <span class="c1"># Add a layer to the neural stack</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">component</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">Optimizer</span><span class="p">):</span>
+            <span class="c1"># Set the optimizer</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">component</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">Cost</span><span class="p">):</span>
+            <span class="c1"># Set the error metric</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cost_op</span> <span class="o">=</span> <span class="n">component</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">component</span><span class="p">,</span> <span class="n">Batching</span><span class="p">):</span>
+            <span class="c1"># Set the batching algorithm</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">batch_op</span> <span class="o">=</span> <span class="n">component</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">WrongComponentTypeError</span><span class="p">(</span><span class="s2">&quot;Unknown component type&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NeuralStack.eval_loss"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.NeuralStack.eval_loss">[docs]</a>    <span class="k">def</span> <span class="nf">eval_loss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">batch_y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns the loss value of the output computed by the model</span>
+<span class="sd">        with respect to the actual output.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            batch_y (:obj:`np.ndarray`):</span>
+<span class="sd">                True labels of the samples.</span>
+<span class="sd">            predictions (:obj:`np.ndarray`):</span>
+<span class="sd">                Labels predicted by the model.</span>
+<span class="sd">            alpha (float):</span>
+<span class="sd">                L2 regularization alpha term (0 if no L2).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            float:</span>
+<span class="sd">                loss:</span>
+<span class="sd">                    The value of the loss function.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_op</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">batch_y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
+        <span class="c1"># Apply L2 regularization</span>
+        <span class="k">if</span> <span class="n">alpha</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+                <span class="n">params</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">get_parameters</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">params</span><span class="p">:</span>
+                    <span class="n">squared_params</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">squared_params</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
+                        <span class="n">loss</span> <span class="o">+=</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">alpha</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">squared_params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">loss</span></div>
+
+<div class="viewcode-block" id="NeuralStack.train"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.NeuralStack.train">[docs]</a>    <span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">l2_alpha</span><span class="o">=</span><span class="mf">.1</span><span class="p">,</span>
+              <span class="n">print_every</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">validation_fraction</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+              <span class="n">dataset_normalization</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Trains the model on samples X and labels y. Optimize the model</span>
+<span class="sd">        parameters so that the loss is minimized on this dataset.</span>
+<span class="sd">        The validation fraction *must* be in [0, 1] (0 to not evaluate the</span>
+<span class="sd">        model on a validation set).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (:obj:`np.ndarray`):</span>
+<span class="sd">                Array of samples. `shape == (n_instances, n_features)` or</span>
+<span class="sd">                `shape == (n_instances, n_pixels, n_channels)` for images.</span>
+<span class="sd">            y (:obj:`np.ndarray`):</span>
+<span class="sd">                Array of labels. `shape == (n_instances,)`</span>
+<span class="sd">            epochs (int):</span>
+<span class="sd">                Number of times the dataset (X, y) is entirely fed to the model.</span>
+<span class="sd">            l2_alpha (float):</span>
+<span class="sd">                L2 regularization alpha parameter (0 if no L2).</span>
+<span class="sd">            print_every (int):</span>
+<span class="sd">                Number of batches between two prints of model state and</span>
+<span class="sd">                evaluations on the intermediate validation set (negative</span>
+<span class="sd">                number if none is wanted). Defaults to 1.</span>
+<span class="sd">            validation_fraction (float):</span>
+<span class="sd">                Proportion of samples to be kept for validation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :obj:`np.ndarray`:</span>
+<span class="sd">                errors:</span>
+<span class="sd">                    array of the loss of each batch.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError:</span>
+<span class="sd">                see :func:`split_train_val`.</span>
+<span class="sd">            RequiredComponentError:</span>
+<span class="sd">                see :meth:`check_components`.</span>
+
+<span class="sd">        Example:</span>
+<span class="sd">            &gt;&gt;&gt; X, y = load_digits(return_X_y=True)</span>
+<span class="sd">            &gt;&gt;&gt; n_in, n_hidden, n_out = 64, 32, 10</span>
+<span class="sd">            &gt;&gt;&gt; nn = NeuralStack()</span>
+<span class="sd">            &gt;&gt;&gt; nn.add(FullyConnected(n_in, n_hidden))</span>
+<span class="sd">            &gt;&gt;&gt; nn.add(Activation())</span>
+<span class="sd">            &gt;&gt;&gt; nn.add(FullyConnected(n_hidden, n_out))</span>
+<span class="sd">            &gt;&gt;&gt; nn.add(Activation(&#39;softmax&#39;))</span>
+<span class="sd">            &gt;&gt;&gt; nn.add(CrossEntropy())</span>
+<span class="sd">            &gt;&gt;&gt; nn.add(AdamOptimizer())</span>
+<span class="sd">            &gt;&gt;&gt; nn.add(SGDBatching(512))</span>
+<span class="sd">            &gt;&gt;&gt; losses = nn.train(X, y)</span>
+<span class="sd">            Loss at epoch 49 (batch 2): 1.2941039726880612   - Validation accuracy: 83.333%</span>
+<span class="sd">            Loss at epoch 99 (batch 2): 0.764482839362229    - Validation accuracy: 96.111%</span>
+<span class="sd">            Loss at epoch 149 (batch 2): 0.5154527368075816   - Validation accuracy: 97.222%</span>
+<span class="sd">            Loss at epoch 199 (batch 2): 0.3979498104086121   - Validation accuracy: 97.778%</span>
+<span class="sd">            Loss at epoch 249 (batch 2): 0.32569535096131924  - Validation accuracy: 97.778%</span>
+<span class="sd">            Loss at epoch 299 (batch 2): 0.2748402661346476   - Validation accuracy: 97.778%</span>
+<span class="sd">            Loss at epoch 349 (batch 2): 0.2555267910622358   - Validation accuracy: 97.778%</span>
+<span class="sd">            Loss at epoch 399 (batch 2): 0.22863001357754167  - Validation accuracy: 97.778%</span>
+<span class="sd">            Loss at epoch 449 (batch 2): 0.22746067257186584  - Validation accuracy: 97.778%</span>
+<span class="sd">            Loss at epoch 499 (batch 2): 0.22220948073377536  - Validation accuracy: 97.778%</span>
+<span class="sd">            Loss at epoch 549 (batch 2): 0.2089401746378744   - Validation accuracy: 98.333%</span>
+<span class="sd">            Loss at epoch 599 (batch 2): 0.20035077161054704  - Validation accuracy: 98.333%</span>
+<span class="sd">            Loss at epoch 649 (batch 2): 0.1867468456143161   - Validation accuracy: 98.333%</span>
+<span class="sd">            Loss at epoch 699 (batch 2): 0.17347271604108705  - Validation accuracy: 98.333%</span>
+<span class="sd">            Loss at epoch 749 (batch 2): 0.15376433332896908  - Validation accuracy: 98.333%</span>
+<span class="sd">            Loss at epoch 799 (batch 2): 0.15436015140582668  - Validation accuracy: 98.333%</span>
+<span class="sd">            Loss at epoch 849 (batch 2): 0.13860411664942396  - Validation accuracy: 98.889%</span>
+<span class="sd">            Loss at epoch 899 (batch 2): 0.133165375570591    - Validation accuracy: 98.333%</span>
+<span class="sd">            Loss at epoch 949 (batch 2): 0.12890010110436428  - Validation accuracy: 98.333%</span>
+<span class="sd">            Loss at epoch 999 (batch 2): 0.12433454132628034  - Validation accuracy: 98.333%</span>
+<span class="sd">            &gt;&gt;&gt; print(&#39;Loss over time:&#39;, losses)</span>
+<span class="sd">            Errors: [ 2.50539121  2.28391007  2.40779468 ...,  0.11655055  0.12436938  0.09155006]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span>  <span class="c1"># Force the NN to work only with np.float32</span>
+        <span class="c1"># Check arrays</span>
+        <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">dtype</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dataset_normalization</span><span class="p">:</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span> <span class="o">-</span> <span class="n">X</span><span class="o">.</span><span class="n">mean</span><span class="p">())</span> <span class="o">/</span> <span class="n">X</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+
+        <span class="c1"># Check components</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_components</span><span class="p">()</span>
+
+        <span class="c1"># Split data into training data and validation data for early stopping</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">50</span><span class="p">:</span>
+            <span class="n">validation_fraction</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">validation_fraction</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_val</span><span class="p">,</span> <span class="n">y_val</span> <span class="o">=</span> <span class="n">split_train_val</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">validation_fraction</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span>
+
+        <span class="c1"># Binarize labels if classification task</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cost_op</span><span class="p">,</span> <span class="n">ClassificationCost</span><span class="p">):</span>
+            <span class="n">y_train</span> <span class="o">=</span> <span class="n">binarize_labels</span><span class="p">(</span><span class="n">y_train</span><span class="p">)</span>
+
+        <span class="c1"># Deactivate signal propagation though first layer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">deactivate_propagation</span><span class="p">()</span>
+
+        <span class="n">losses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="n">nb_batches</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">l2_alpha</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">l2_alpha</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">l2_alpha</span> <span class="o">/=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_op</span><span class="o">.</span><span class="n">batch_size</span>  <span class="c1"># TODO: batch_size is not an attribute of Batching</span>
+        <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+            <span class="n">batch_id</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">batch_op</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+            <span class="n">next_batch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_op</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+            <span class="k">while</span> <span class="n">next_batch</span><span class="p">:</span>
+                <span class="n">batch_x</span><span class="p">,</span> <span class="n">batch_y</span> <span class="o">=</span> <span class="n">next_batch</span>
+                <span class="n">batch_id</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">nb_batches</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="c1"># Forward pass</span>
+                <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">batch_x</span><span class="p">)</span>
+
+                <span class="c1"># Compute loss function</span>
+                <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_loss</span><span class="p">(</span><span class="n">batch_y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">l2_alpha</span><span class="p">)</span>
+                <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+                <span class="c1"># Compute gradient of the loss function</span>
+                <span class="n">signal</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_op</span><span class="o">.</span><span class="n">grad</span><span class="p">(</span><span class="n">batch_y</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+
+                <span class="c1"># Propagate error through each layer</span>
+                <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">):</span>
+                    <span class="n">signal</span><span class="p">,</span> <span class="n">gradient</span> <span class="o">=</span> <span class="n">layer</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">signal</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">gradient</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">add_gradient_fragments</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">l2_alpha</span><span class="p">)</span>
+                <span class="n">F</span> <span class="o">=</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval_loss</span><span class="p">(</span><span class="n">batch_y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">batch_x</span><span class="p">),</span> <span class="n">l2_alpha</span><span class="p">)</span>  <span class="c1"># pylint: disable=cell-var-from-loop</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">F</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">print_every</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">nb_batches</span> <span class="o">%</span> <span class="n">print_every</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">log</span><span class="p">(</span><span class="s1">&#39;Loss at epoch </span><span class="si">{}</span><span class="s1"> (batch </span><span class="si">{}</span><span class="s1">): </span><span class="si">{: &lt;20}</span><span class="s1">&#39;</span> \
+                        <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">epoch</span><span class="p">,</span> <span class="n">batch_id</span><span class="p">,</span> <span class="n">loss</span><span class="p">),</span>
+                        <span class="n">end</span><span class="o">=</span><span class="s1">&#39; - Validation &#39;</span> <span class="k">if</span> <span class="n">validation_fraction</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">validation_fraction</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">cost_op</span><span class="o">.</span><span class="n">print_fitness</span><span class="p">(</span><span class="n">y_val</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">X_val</span><span class="p">))</span>
+
+                <span class="c1"># Retrieve batch for next iteration</span>
+                <span class="n">next_batch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_op</span><span class="o">.</span><span class="n">next</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">losses</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NeuralStack.eval"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.NeuralStack.eval">[docs]</a>    <span class="k">def</span> <span class="nf">eval</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=-</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Feeds a sample (or batch) to the model linearly from any</span>
+<span class="sd">        layer to any layer. By default, X is propagated through the</span>
+<span class="sd">        entire stack.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            X (:obj:`np.ndarray`):</span>
+<span class="sd">                The sample (or batch of samples) to feed to the model.</span>
+<span class="sd">            start (int):</span>
+<span class="sd">                Index of the layer where X is to be fed.</span>
+<span class="sd">            stop (int):</span>
+<span class="sd">                Index of the last layer of propagation (-1 for last layer).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :obj:`np.ndarray`:</span>
+<span class="sd">                out:</span>
+<span class="sd">                    Output of the propagation of X through each layer</span>
+<span class="sd">                    of the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stop</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">or</span> <span class="n">stop</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">):</span>
+            <span class="n">stop</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">stop</span><span class="p">):</span>
+            <span class="n">X</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">forward</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">X</span></div>
+
+<div class="viewcode-block" id="NeuralStack.get_accuracy"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.NeuralStack.get_accuracy">[docs]</a>    <span class="k">def</span> <span class="nf">get_accuracy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Returns the accuracy of the provided dataset on the model.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            :class:`AttributeError` if the model is not classifying.</span>
+
+<span class="sd">        See :meth:`bgd.ClassificationCost.accuracy`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cost_op</span><span class="p">,</span> <span class="n">ClassificationCost</span><span class="p">):</span>
+            <span class="c1">#if y.ndim == 1:</span>
+            <span class="c1">#    y = binarize_labels(y)</span>
+            <span class="k">return</span> <span class="n">ClassificationCost</span><span class="o">.</span><span class="n">accuracy</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">eval</span><span class="p">(</span><span class="n">X</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s1">&#39;Model is not classifying. Accuracy unavailable.&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="NeuralStack.activate_dropout"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.NeuralStack.activate_dropout">[docs]</a>    <span class="k">def</span> <span class="nf">activate_dropout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Activates the Dropout layers (for training phase). &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">Dropout</span><span class="p">):</span>
+                <span class="n">layer</span><span class="o">.</span><span class="n">activate</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="NeuralStack.deactivate_dropout"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.NeuralStack.deactivate_dropout">[docs]</a>    <span class="k">def</span> <span class="nf">deactivate_dropout</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Deactivates the Dropout layers (after training phase). &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">Dropout</span><span class="p">):</span>
+                <span class="n">layer</span><span class="o">.</span><span class="n">deactivate</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="NeuralStack.check_components"><a class="viewcode-back" href="../../bgd/bgd.nn.html#bgd.nn.NeuralStack.check_components">[docs]</a>    <span class="k">def</span> <span class="nf">check_components</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Verifies that all the components are set properly so</span>
+<span class="sd">        that training is possible. If either the batch method, the</span>
+<span class="sd">        optimizer or the error function is missing, an exception</span>
+<span class="sd">        will be raised.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RequiredComponentError:</span>
+<span class="sd">                If any component of the model has not been set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check batch optimization method</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_op</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RequiredComponentError</span><span class="p">(</span><span class="n">Batching</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="c1"># Check optimizer</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RequiredComponentError</span><span class="p">(</span><span class="n">Optimizer</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+
+        <span class="c1"># Check loss function</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_op</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RequiredComponentError</span><span class="p">(</span><span class="n">Cost</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2018, Antoine Passemiers and Robin Petit.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
