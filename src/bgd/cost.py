@@ -218,7 +218,7 @@ class CrossEntropy(ClassificationCost):
                     The gradient of the error for each sample
                     of the batch. `shape == (len(y),)`
         """
-        return y_hat - y
+        return -y / (np.maximum(y_hat, self.epsilon) * len(y))
 
     def name(self):
         return 'cross-entropy'
