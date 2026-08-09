@@ -1,3 +1,5 @@
+
+
 [![Travis-CI Build Status](https://travis-ci.org/AntoinePassemiers/Beyond-Gradient-Descent.svg?branch=master)](https://travis-ci.org/AntoinePassemiers/Beyond-Gradient-Descent)
 # BGD - Second order optimization for neural networks
 
@@ -46,7 +48,7 @@ nn.add(AdamOptimizer(learning_rate=0.007))
 Train the model.
 
 ```python
-nn.train(X_train, y_train, alpha_reg=0.0001, epochs=6, print_every=100)
+nn.train(X_train, y_train, l2_alpha=0.0001, epochs=6, print_every=100)
 ```
 
 Assess performance.
@@ -114,4 +116,3 @@ To install the package:
 * if you terminal supports `make`, then run `make install` in the root;
 * otherwise (or if you prefer), move to `src/` with `cd src` and then install
   the package with `python3 setup.py install`.
-
